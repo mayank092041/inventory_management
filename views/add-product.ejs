@@ -1,201 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Product - InventoryPro</title>
 
     <link rel="stylesheet" href="/css/style.css">
 
+    <style>
+        .product-form-container {
+            max-width: 750px;
+            margin: 30px auto;
+            padding: 30px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .product-form-container h1 {
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .form-description {
+            margin-bottom: 25px;
+            color: #64748b;
+        }
+
+        .required-note {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 15px;
+            box-sizing: border-box;
+            background: #ffffff;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn-save,
+        .btn-cancel {
+            display: inline-block;
+            padding: 11px 20px;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn-save {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .btn-save:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .btn-cancel:hover {
+            background: #cbd5e1;
+        }
+
+        @media (max-width: 600px) {
+            .product-form-container {
+                margin: 15px;
+                padding: 20px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn-save,
+            .btn-cancel {
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 
-<body class="auth-page">
+<body>
+    <div class="product-form-container">
 
-    <div class="auth-container">
+        <h1>Add New Product</h1>
 
-        <div class="auth-card product-form-card">
+        <p class="form-description">
+            Enter the product details to add a new item to your inventory.
+        </p>
 
-            <div class="auth-header">
+        <p class="required-note">Fields marked with * are required.</p><br><br>
 
-                <div class="auth-logo">
-                    InventoryPro
-                </div>
+        <form action="/products/add" method="POST">
 
-                <h1>Add Product</h1>
-
-                <p>
-                    Add a new product to your inventory.
-                </p>
-
+            <!-- Product Name -->
+            <div class="form-group">
+                <label for="name">Product Name *</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    placeholder="Enter product name"
+                    required
+                >
             </div>
 
+            <!-- Product Description -->
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="4"
+                    placeholder="Enter product description"
+                ></textarea>
+            </div>
 
-            <form
-                action="/products/add"
-                method="POST"
-                class="auth-form">
+            <!-- Category -->
+            <div class="form-group">
+                <label for="category">Category *</label>
+                <select id="category" name="category" required>
+                    <option value="">Select a category</option>
 
-
-                <!-- Product Name -->
-
-                <div class="form-group">
-
-                    <label for="name">
-                        Product Name
-                    </label>
-
-                    <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        placeholder="Enter product name"
-                        required
-                    >
-
-                </div>
-
-
-                <!-- SKU -->
-
-                <div class="form-group">
-
-                    <label for="sku">
-                        SKU
-                    </label>
-
-                    <input
-                        type="text"
-                        id="sku"
-                        name="sku"
-                        placeholder="Example: PROD-001"
-                        required
-                    >
-
-                </div>
-
-
-                <!-- Category -->
-
-                <div class="form-group">
-
-                    <label for="category">
-                        Category
-                    </label>
-
-                    <select
-                        id="category"
-                        name="category"
-                        required
-                    >
-
-                        <option value="">
-                            Select Category
+                    <% categories.forEach(category => { %>
+                        <option value="<%= category._id %>">
+                            <%= category.name %>
                         </option>
+                    <% }) %>
+                </select>
+            </div>
 
+            <!-- Price -->
+            <div class="form-group">
+                <label for="price">Price *</label>
+                <input
+                    type="number"
+                    id="price"
+                    name="price"
+                    placeholder="Enter product price"
+                    min="0"
+                    step="0.01"
+                    required
+                >
+            </div>
 
-                        <% categories.forEach((category) => { %>
+            <!-- Initial Quantity -->
+            <div class="form-group">
+                <label for="quantity">Initial Quantity *</label>
+                <input
+                    type="number"
+                    id="quantity"
+                    name="quantity"
+                    placeholder="Enter available quantity"
+                    min="0"
+                    step="1"
+                    value="0"
+                    required
+                >
+                <small>
+                    Enter the number of units currently available.
+                </small>
+            </div>
 
-                            <option value="<%= category._id %>">
-                                <%= category.name %>
-                            </option>
+            <!-- Low Stock Threshold -->
+            <div class="form-group">
+                <label for="lowStockThreshold">
+                    Low Stock Threshold *
+                </label>
 
-                        <% }) %>
+                <input
+                    type="number"
+                    id="lowStockThreshold"
+                    name="lowStockThreshold"
+                    min="0"
+                    step="1"
+                    value="5"
+                    required
+                >
 
-                    </select>
+                <small>
+                    A low-stock alert appears when the available quantity
+                    is equal to or below this value.
+                </small>
+            </div>
 
-                </div>
+            <!-- SKU -->
+            <div class="form-group">
+                <label for="sku">SKU (Product Code) *</label>
+                <input
+                    type="text"
+                    id="sku"
+                    name="sku"
+                    placeholder="Enter a unique product code"
+                    required
+                >
+                <small>
+                    Example: PROD-001. Each product must have a unique SKU.
+                </small>
+            </div>
 
-
-                <!-- Price -->
-
-                <div class="form-group">
-
-                    <label for="price">
-                        Price (₹)
-                    </label>
-
-                    <input
-                        type="number"
-                        id="price"
-                        name="price"
-                        placeholder="Enter product price"
-                        min="0"
-                        step="0.01"
-                        required
-                    >
-
-                </div>
-
-
-                <!-- Quantity -->
-
-                <div class="form-group">
-
-                    <label for="quantity">
-                        Quantity
-                    </label>
-
-                    <input
-                        type="number"
-                        id="quantity"
-                        name="quantity"
-                        placeholder="Enter quantity"
-                        min="0"
-                        required
-                    >
-
-                </div>
-
-
-                <!-- Description -->
-
-                <div class="form-group">
-
-                    <label for="description">
-                        Description
-                    </label>
-
-                    <textarea
-                        id="description"
-                        name="description"
-                        rows="4"
-                        placeholder="Enter product description"
-                    ></textarea>
-
-                </div>
-
-
-                <button
-                    type="submit"
-                    class="auth-button">
-
+            <!-- Form Buttons -->
+            <div class="form-actions">
+                <button type="submit" class="btn-save">
                     Add Product
-
                 </button>
 
-            </form>
-
-
-            <div class="auth-footer">
-
-                <a href="/products"
-                    class="back-home">
-
-                    ← Back to Products
-
+                <a href="/products" class="btn-cancel">
+                    Cancel
                 </a>
-
             </div>
 
-        </div>
-
+        </form>
     </div>
-
 </body>
-
 </html>

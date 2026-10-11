@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Add Purchase - InventoryPro</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+            font-family: Arial, sans-serif;
+        }
+
+        .purchase-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+            color: #172554;
+        }
+
+        .page-header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .purchase-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 28px;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04);
+            margin-bottom: 22px;
+        }
+
+        .section-heading {
+            font-size: 19px;
+            color: #172554;
+            margin: 0 0 8px;
+        }
+
+        .section-description {
+            color: #64748b;
+            font-size: 13px;
+            margin: 0 0 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            min-width: 0;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #1e293b;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .supplier-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .products-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .products-heading h2 {
+            margin: 0;
+            font-size: 19px;
+            color: #172554;
+        }
+
+        .btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            padding: 11px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 10px 12px;
+        }
+
+        .btn-danger:hover {
+            background: #fecaca;
+        }
+
+        .product-row {
+            display: grid;
+            grid-template-columns: minmax(180px, 2fr)
+                                   minmax(90px, 0.8fr)
+                                   minmax(130px, 1fr)
+                                   minmax(110px, 1fr)
+                                   auto;
+            gap: 14px;
+            align-items: end;
+            padding: 18px;
+            margin-bottom: 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .row-number {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .line-total {
+            min-height: 43px;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            color: #166534;
+            font-size: 14px;
+        }
+
+        .total-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 22px;
+            margin-top: 22px;
+        }
+
+        .total-label {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .total-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1d4ed8;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .empty-products {
+            padding: 25px;
+            text-align: center;
+            color: #64748b;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .product-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .product-row .form-group:first-child {
+                grid-column: 1 / -1;
+            }
+
+            .product-row .remove-wrapper {
+                display: flex;
+                justify-content: flex-end;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .purchase-page {
+                padding: 20px 12px;
+            }
+
+            .purchase-card {
+                padding: 18px;
+            }
+
+            .supplier-grid,
+            .product-row {
+                grid-template-columns: 1fr;
+            }
+
+            .product-row .form-group:first-child {
+                grid-column: auto;
+            }
+
+            .total-amount {
+                font-size: 23px;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="purchase-page">
+
+        <header class="page-header">
+            <div>
+                <h1>Create Purchase</h1>
+                <p>Record a supplier purchase and add stock to your inventory.</p>
+            </div>
+
+            <a href="/purchases" class="back-link">
+                &larr; Back to Purchases
+            </a>
+        </header>
+
+        <form action="/purchases/add" method="POST" id="purchaseForm">
+
+            <!-- Supplier Details -->
+            <section class="purchase-card">
+                <h2 class="section-heading">Supplier Details</h2>
+                <p class="section-description">
+                    Select the supplier from whom you purchased the products.
+                </p>
+
+                <div class="supplier-grid">
+                    <div class="form-group">
+                        <label for="supplier">Supplier *</label>
+
+                        <select id="supplier" name="supplier" required>
+                            <option value="">Select a supplier</option>
+
+                            <% if (suppliers && suppliers.length > 0) { %>
+                                <% suppliers.forEach(supplier => { %>
+                                    <option value="<%= supplier._id %>">
+                                        <%= supplier.name ||
+                                            supplier.supplierName ||
+                                            supplier.companyName ||
+                                            "Unnamed Supplier" %>
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="purchaseDate">Purchase Date</label>
+
+                        <input
+                            type="date"
+                            id="purchaseDate"
+                            name="purchaseDate"
+                            value="<%= new Date().toLocaleDateString('en-CA') %>"
+                        >
+                    </div>
+                </div>
+            </section>
+
+            <!-- Product Details -->
+            <section class="purchase-card">
+                <div class="products-heading">
+                    <div>
+                        <h2>Purchased Products</h2>
+                        <p class="section-description" style="margin: 8px 0 0;">
+                            Add one or more products to this purchase.
+                        </p>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" id="addProductBtn">
+                        + Add Product
+                    </button>
+                </div>
+
+                <div id="productRows">
+
+                    <!-- Initial product row -->
+                    <div class="product-row">
+                        <div class="form-group">
+                            <span class="row-number">Product 1</span>
+                            <label>Product *</label>
+
+                            <select name="product" class="product-select" required>
+                                <option value="">Select a product</option>
+
+                                <% if (products && products.length > 0) { %>
+                                    <% products.forEach(product => { %>
+                                        <option value="<%= product._id %>">
+                                            <%= product.name ||
+                                                product.productName ||
+                                                "Unnamed Product" %>
+                                        </option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Quantity *</label>
+                            <input
+                                type="number"
+                                name="quantity"
+                                class="quantity-input"
+                                min="1"
+                                step="1"
+                                value="1"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Purchase Price (₹) *</label>
+                            <input
+                                type="number"
+                                name="purchasePrice"
+                                class="price-input"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Line Total</label>
+                            <div class="line-total">₹0.00</div>
+                        </div>
+
+                        <div class="remove-wrapper">
+                            <button
+                                type="button"
+                                class="btn btn-danger remove-product"
+                                disabled
+                                title="At least one product is required"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="total-card">
+                    <div>
+                        <div class="total-label">Grand Total</div>
+                        <div style="color: #64748b; font-size: 12px; margin-top: 5px;">
+                            Total cost of all purchased products
+                        </div>
+                    </div>
+
+                    <div class="total-amount" id="grandTotal">₹0.00</div>
+                </div>
+            </section>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="/purchases" class="btn btn-secondary">
+                    Cancel
+                </a>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    Save Purchase
+                </button>
+            </div>
+
+        </form>
+    </main>
+
+    <script>
+        const productRows = document.getElementById("productRows");
+        const addProductBtn = document.getElementById("addProductBtn");
+        const grandTotal = document.getElementById("grandTotal");
+        const purchaseForm = document.getElementById("purchaseForm");
+
+        // Keep the product options for newly added rows.
+        const productOptions = document.querySelector(
+            ".product-select"
+        ).innerHTML;
+
+        function formatCurrency(amount) {
+            return "₹" + amount.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Calculate each row's total and the overall total.
+        function calculateTotal() {
+            let total = 0;
+
+            document.querySelectorAll(".product-row").forEach(row => {
+                const quantity = Number(
+                    row.querySelector(".quantity-input").value
+                ) || 0;
+
+                const price = Number(
+                    row.querySelector(".price-input").value
+                ) || 0;
+
+                const lineTotal = quantity * price;
+
+                row.querySelector(".line-total").textContent =
+                    formatCurrency(lineTotal);
+
+                total += lineTotal;
+            });
+
+            grandTotal.textContent = formatCurrency(total);
+        }
+
+        // Update row numbers and enable/disable remove buttons.
+        function updateRows() {
+            const rows = document.querySelectorAll(".product-row");
+
+            rows.forEach((row, index) => {
+                row.querySelector(".row-number").textContent =
+                    "Product " + (index + 1);
+
+                const removeBtn = row.querySelector(".remove-product");
+
+                removeBtn.disabled = rows.length === 1;
+                removeBtn.title = rows.length === 1
+                    ? "At least one product is required"
+                    : "Remove this product";
+            });
+        }
+
+        // Add a new product row.
+        addProductBtn.addEventListener("click", function () {
+            const row = document.createElement("div");
+
+            row.className = "product-row";
+
+            row.innerHTML = `
+                <div class="form-group">
+                    <span class="row-number"></span>
+                    <label>Product *</label>
+                    <select name="product" class="product-select" required>
+                        ${productOptions}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity *</label>
+                    <input
+                        type="number"
+                        name="quantity"
+                        class="quantity-input"
+                        min="1"
+                        step="1"
+                        value="1"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Purchase Price (₹) *</label>
+                    <input
+                        type="number"
+                        name="purchasePrice"
+                        class="price-input"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="0.00"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Line Total</label>
+                    <div class="line-total">₹0.00</div>
+                </div>
+
+                <div class="remove-wrapper">
+                    <button
+                        type="button"
+                        class="btn btn-danger remove-product"
+                    >
+                        Remove
+                    </button>
+                </div>
+            `;
+
+            productRows.appendChild(row);
+
+            updateRows();
+            calculateTotal();
+        });
+
+        // Handle input changes and remove buttons.
+        productRows.addEventListener("input", function (event) {
+            if (
+                event.target.classList.contains("quantity-input") ||
+                event.target.classList.contains("price-input")
+            ) {
+                calculateTotal();
+            }
+        });
+
+        productRows.addEventListener("click", function (event) {
+            if (event.target.classList.contains("remove-product")) {
+                const rows = document.querySelectorAll(".product-row");
+
+                if (rows.length > 1) {
+                    event.target.closest(".product-row").remove();
+
+                    updateRows();
+                    calculateTotal();
+                }
+            }
+        });
+
+        // Prevent the same product from being selected twice.
+        // This keeps each product represented by one row.
+        productRows.addEventListener("change", function (event) {
+            if (!event.target.classList.contains("product-select")) {
+                return;
+            }
+
+            const selectedProducts = Array.from(
+                document.querySelectorAll(".product-select")
+            )
+                .map(select => select.value)
+                .filter(value => value !== "");
+
+            const hasDuplicates =
+                new Set(selectedProducts).size !== selectedProducts.length;
+
+            if (hasDuplicates) {
+                alert("This product is already selected. Choose another product.");
+                event.target.value = "";
+            }
+        });
+
+        // Client-side check only; the server must validate values too.
+        purchaseForm.addEventListener("submit", function (event) {
+            const rows = document.querySelectorAll(".product-row");
+
+            for (const row of rows) {
+                const quantity = Number(
+                    row.querySelector(".quantity-input").value
+                );
+
+                const price = Number(
+                    row.querySelector(".price-input").value
+                );
+
+                if (
+                    !row.querySelector(".product-select").value ||
+                    !Number.isInteger(quantity) ||
+                    quantity < 1 ||
+                    !Number.isFinite(price) ||
+                    price <= 0
+                ) {
+                    event.preventDefault();
+                    alert(
+                        "Please select each product and enter a valid quantity and purchase price."
+                    );
+                    return;
+                }
+            }
+        });
+
+        updateRows();
+        calculateTotal();
+    </script>
+</body>
+</html>

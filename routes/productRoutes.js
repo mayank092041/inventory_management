@@ -6,8 +6,12 @@ const Category = require("../models/Category");
 const protect = require("../middleware/authMiddleware");
 
 const allowedRoles = require("../middleware/roleMiddleware");
+const app = express()
+app.use(express.urlencoded({ encoded: true }))
+
 
 const router = express.Router();
+
 
 router.get("/products", protect, async (req, res) => {
     try {
@@ -90,6 +94,7 @@ router.post(
                 category,
                 price,
                 quantity,
+                lowStockThreshold,
                 sku
 
             });
@@ -180,6 +185,13 @@ router.post(
                 sku
             } = req.body;
 
+            const lowStockThreshold = Number(req.body.lowStockThreshold);
+            if (
+                !Number.isSafeInteger(lowStockThreshold) ||
+                lowStockThreshold < 0
+            ) {
+                return res.status(400).send("Invalid low stock threshold");
+            }
 
             // Check duplicate SKU
 
@@ -226,7 +238,11 @@ router.post(
                     category,
                     price,
                     quantity,
+                    lowStockThreshold,
                     sku
+                },
+                {
+                    runValidators : true
                 }
             );
 

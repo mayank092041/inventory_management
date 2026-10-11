@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchases - InventoryPro</title>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        .purchase-container {
+            padding: 30px;
+        }
+
+        .purchase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .purchase-header h1 {
+            margin: 0;
+            color: #172554;
+        }
+
+        .purchase-header p {
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .purchase-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .purchase-btn {
+            display: inline-block;
+            padding: 11px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .primary-btn {
+            background: #2563eb;
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .secondary-btn {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .purchase-table-wrapper {
+            background: white;
+            border-radius: 12px;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+        }
+
+        .purchase-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+
+        .purchase-table th,
+        .purchase-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .purchase-table th {
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .purchase-table td {
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .purchase-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .purchase-total {
+            font-weight: 700;
+            color: #166534 !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 45px 20px;
+            color: #64748b;
+        }
+
+        @media (max-width: 600px) {
+            .purchase-container {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="purchase-container">
+        <div class="purchase-header">
+            <div>
+                <h1>Purchase Management</h1>
+                <p>Track supplier purchases and incoming inventory.</p>
+            </div>
+
+            <div class="purchase-actions">
+                <a href="/dashboard" class="purchase-btn secondary-btn">
+                    Dashboard
+                </a>
+
+                <% if (user && ["Admin", "Manager"].includes(user.role)) { %>
+                    <a href="/purchases/add"
+                       class="purchase-btn primary-btn">
+                        + New Purchase
+                    </a>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="purchase-table-wrapper">
+            <table class="purchase-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Supplier</th>
+                        <th>Products</th>
+                        <th>Purchase Date</th>
+                        <th>Total Amount</th>
+                        <th>Purchased By</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <% if (purchases && purchases.length > 0) { %>
+                        <% purchases.forEach((purchase, index) => { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+
+                                <td>
+                                    <%= purchase.supplier
+                                        ? (purchase.supplier.name ||
+                                           purchase.supplier.supplierName ||
+                                           "Supplier")
+                                        : "N/A" %>
+                                </td>
+
+                                <td>
+                                    <%= purchase.items
+                                        ? purchase.items.length
+                                        : 0 %>
+                                    item(s)
+                                </td>
+
+                                <td>
+                                    <%= purchase.purchaseDate
+                                        ? new Date(purchase.purchaseDate)
+                                            .toLocaleDateString("en-IN")
+                                        : "N/A" %>
+                                </td>
+
+                                <td class="purchase-total">
+                                    ₹<%= Number(
+                                        purchase.totalAmount || 0
+                                    ).toLocaleString("en-IN", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }) %>
+                                </td>
+
+                                <td>
+                                    <%= purchase.purchasedBy
+                                        ? (purchase.purchasedBy.name ||
+                                           purchase.purchasedBy.userId ||
+                                           "User")
+                                        : "N/A" %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <h3>No purchases found</h3>
+                                    <p>Start by recording your first purchase.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
