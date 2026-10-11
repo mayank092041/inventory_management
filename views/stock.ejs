@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Management - InventoryPro</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dashboard-page">
+
+    <div class="container">
+        <div class="category-card">
+
+            <div class="category-card-header">
+                <div>
+                    <h1>Stock Management</h1>
+                    <p>Track stock movements and inventory adjustments.</p>
+                </div>
+
+                <div class="dashboard-actions">
+                    <a href="/dashboard" class="secondary-button">
+                        Dashboard
+                    </a>
+
+                    <% if (user.role === "Admin" || user.role === "Manager") { %>
+                        <a href="/stock/adjust" class="primary-button">
+                            + Adjust Stock
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="stock-summary-grid">
+                <div class="stock-summary-card">
+                    <span class="stock-summary-icon">📋</span>
+                    <div>
+                        <p>Total Movements</p>
+                        <h2><%= movements.length %></h2>
+                    </div>
+                </div>
+
+                <div class="stock-summary-card">
+                    <span class="stock-summary-icon stock-in-icon">↗</span>
+                    <div>
+                        <p>Stock In Transactions</p>
+                        <h2><%= movements.filter(m => m.type === "Stock In").length %></h2>
+                    </div>
+                </div>
+
+                <div class="stock-summary-card">
+                    <span class="stock-summary-icon stock-out-icon">↘</span>
+                    <div>
+                        <p>Stock Out Transactions</p>
+                        <h2><%= movements.filter(m => m.type === "Stock Out").length %></h2>
+                    </div>
+                </div>
+            </div>
+
+            <% if (movements.length > 0) { %>
+
+                <div class="table-container">
+                    <table class="category-table stock-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product</th>
+                                <th>SKU</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Previous Stock</th>
+                                <th>New Stock</th>
+                                <th>Reason</th>
+                                <th>Performed By</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <% movements.forEach(movement => { %>
+                                <tr>
+                                    <td>
+                                        <%= new Date(movement.createdAt).toLocaleString("en-IN") %>
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            <%= movement.product ? movement.product.name : "Deleted Product" %>
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        <%= movement.product ? movement.product.sku : "—" %>
+                                    </td>
+
+                                    <td>
+                                        <span class="<%= movement.type === 'Stock In' ? 'stock-type-in' : 'stock-type-out' %>">
+                                            <%= movement.type %>
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <strong><%= movement.quantity %></strong>
+                                    </td>
+
+                                    <td><%= movement.previousQuantity %></td>
+
+                                    <td><%= movement.newQuantity %></td>
+
+                                    <td><%= movement.reason %></td>
+
+                                    <td>
+                                        <%= movement.performedBy ? movement.performedBy.name : "Unknown" %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+
+            <% } else { %>
+
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <h2>No Stock Movements Yet</h2>
+                    <p>Your stock transaction history will appear here.</p>
+
+                    <% if (user.role === "Admin" || user.role === "Manager") { %>
+                        <a href="/stock/adjust" class="primary-button">
+                            Record First Movement
+                        </a>
+                    <% } %>
+                </div>
+
+            <% } %>
+
+        </div>
+    </div>
+
+</body>
+</html>

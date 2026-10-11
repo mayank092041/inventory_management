@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Categories - InventoryPro</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+</head>
+
+<body class="dashboard-page">
+
+    <div class="dashboard-container">
+
+        <!-- Header -->
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Categories</h1>
+
+                <p>
+                    Manage your inventory categories
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+
+                <% if (user.role === "Admin" || user.role === "Manager") { %>
+
+                    <a href="/categories/add"
+                        class="primary-button">
+                        + Add Category
+                    </a>
+
+                <% } %>
+
+                <a href="/dashboard"
+                    class="secondary-button">
+                    Dashboard
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- Content -->
+
+        <div class="dashboard-content">
+
+            <div class="category-card">
+
+                <div class="category-card-header">
+
+                    <div>
+                        <h2>All Categories</h2>
+
+                        <p>
+                            Total Categories:
+                            <strong><%= categories.length %></strong>
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <% if (categories.length === 0) { %>
+
+                    <div class="empty-state">
+
+                        <div class="empty-icon">
+                            📦
+                        </div>
+
+                        <h3>No Categories Found</h3>
+
+                        <p>
+                            Start by adding your first inventory category.
+                        </p>
+
+                        <% if (user.role === "Admin" || user.role === "Manager") { %>
+
+                            <a href="/categories/add"
+                                class="primary-button">
+                                + Add Category
+                            </a>
+
+                        <% } %>
+
+                    </div>
+
+                <% } else { %>
+
+
+                    <div class="table-container">
+
+                        <table class="category-table">
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>#</th>
+
+                                    <th>Name</th>
+
+                                    <th>Description</th>
+
+                                    <th>Created</th>
+
+                                    <% if (user.role === "Admin" || user.role === "Manager") { %>
+                                        <th>Actions</th>
+                                    <% } %>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                                <% categories.forEach((category, index) => { %>
+
+                                    <tr>
+
+                                        <td>
+                                            <%= index + 1 %>
+                                        </td>
+
+                                        <td>
+                                            <strong>
+                                                <%= category.name %>
+                                            </strong>
+                                        </td>
+
+                                        <td>
+                                            <%= category.description || "No description" %>
+                                        </td>
+
+                                        <td>
+                                            <%= new Date(category.createdAt).toLocaleDateString() %>
+                                        </td>
+
+                                        <% if (user.role === "Admin" || user.role === "Manager") { %>
+
+                                            <td class="action-buttons">
+
+                                                <a href="/categories/edit/<%= category._id %>"
+                                                    class="edit-button">
+                                                    Edit
+                                                </a>
+
+                                                <% if (user.role === "Admin") { %>
+
+                                                    <a href="/categories/delete/<%= category._id %>"
+                                                        class="delete-button"
+                                                        onclick="return confirm('Are you sure you want to delete this category?');">
+                                                        Delete
+                                                    </a>
+
+                                                <% } %>
+
+                                            </td>
+
+                                        <% } %>
+
+                                    </tr>
+
+                                <% }) %>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                <% } %>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

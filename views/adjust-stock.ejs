@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adjust Stock - InventoryPro</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dashboard-page">
+
+    <div class="container">
+        <div class="category-form-card stock-form-card">
+
+            <div class="category-card-header">
+                <div>
+                    <h1>Adjust Stock</h1>
+                    <p>Record incoming or outgoing inventory.</p>
+                </div>
+
+                <a href="/stock" class="secondary-button">
+                    Back to Stock
+                </a>
+            </div>
+
+            <% if (products.length > 0) { %>
+
+                <form action="/stock/adjust" method="POST">
+
+                    <div class="form-group">
+                        <label for="productId">Select Product *</label>
+
+                        <select id="productId" name="productId" required>
+                            <option value="">Choose a product</option>
+
+                            <% products.forEach(product => { %>
+                                <option value="<%= product._id %>">
+                                    <%= product.name %> — SKU: <%= product.sku %> (Current stock: <%= product.quantity %>)
+                                </option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="type">Movement Type *</label>
+
+                        <select id="type" name="type" required>
+                            <option value="">Choose movement type</option>
+                            <option value="Stock In">Stock In — Add quantity</option>
+                            <option value="Stock Out">Stock Out — Remove quantity</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quantity">Quantity *</label>
+
+                        <input
+                            type="number"
+                            id="quantity"
+                            name="quantity"
+                            min="1"
+                            step="1"
+                            placeholder="Enter quantity"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reason">Reason *</label>
+
+                        <textarea
+                            id="reason"
+                            name="reason"
+                            rows="4"
+                            maxlength="300"
+                            placeholder="e.g. New shipment received or items issued"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="stock-info-note">
+                        <strong>Note:</strong>
+                        Stock Out cannot exceed the available quantity.
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">
+                            Save Stock Movement
+                        </button>
+
+                        <a href="/stock" class="secondary-button">
+                            Cancel
+                        </a>
+                    </div>
+
+                </form>
+
+            <% } else { %>
+
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <h2>No Products Available</h2>
+                    <p>Add a product before recording a stock movement.</p>
+
+                    <a href="/products/add" class="primary-button">
+                        Add Product
+                    </a>
+                </div>
+
+            <% } %>
+
+        </div>
+    </div>
+
+</body>
+</html>

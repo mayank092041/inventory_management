@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Add Category - InventoryPro</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+</head>
+
+<body class="auth-page">
+
+    <div class="auth-container">
+
+        <div class="auth-card category-form-card">
+
+            <div class="auth-header">
+
+                <div class="auth-logo">
+                    InventoryPro
+                </div>
+
+                <h1>Add Category</h1>
+
+                <p>
+                    Create a new inventory category.
+                </p>
+
+            </div>
+
+
+            <form action="/categories/add"
+                method="POST"
+                class="auth-form">
+
+
+                <div class="form-group">
+
+                    <label for="name">
+                        Category Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="Enter category name"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="description">
+                        Description
+                    </label>
+
+                    <textarea
+                        id="description"
+                        name="description"
+                        placeholder="Enter category description"
+                        rows="5"
+                    ></textarea>
+
+                </div>
+
+
+                <button type="submit"
+                    class="auth-button">
+                    Add Category
+                </button>
+
+            </form>
+
+
+            <div class="auth-footer">
+
+                <a href="/categories"
+                    class="back-home">
+                    ← Back to Categories
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

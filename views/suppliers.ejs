@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suppliers - InventoryPro</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dashboard-page">
+
+    <div class="container">
+        <div class="category-card">
+
+            <div class="category-card-header">
+                <div>
+                    <h1>Supplier Management</h1>
+                    <p>Manage your suppliers and their contact information.</p>
+                </div>
+
+                <div class="dashboard-actions">
+                    <a href="/dashboard" class="secondary-button">
+                        Back to Dashboard
+                    </a>
+
+                    <% if (user.role === "Admin" || user.role === "Manager") { %>
+                        <a href="/suppliers/add" class="primary-button">
+                            + Add Supplier
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="supplier-summary">
+                <div class="supplier-summary-icon">🏢</div>
+                <div>
+                    <p>Total Suppliers</p>
+                    <h2><%= suppliers.length %></h2>
+                </div>
+            </div>
+
+            <% if (suppliers.length > 0) { %>
+
+                <div class="table-container">
+                    <table class="category-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Supplier</th>
+                                <th>Company</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <% if (user.role === "Admin" || user.role === "Manager") { %>
+                                    <th>Actions</th>
+                                <% } %>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <% suppliers.forEach((supplier, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+
+                                    <td>
+                                        <strong><%= supplier.name %></strong>
+                                    </td>
+
+                                    <td>
+                                        <%= supplier.company || "—" %>
+                                    </td>
+
+                                    <td>
+                                        <%= supplier.email || "—" %>
+                                    </td>
+
+                                    <td>
+                                        <%= supplier.phone %>
+                                    </td>
+
+                                    <td>
+                                        <%= supplier.address || "—" %>
+                                    </td>
+
+                                    <% if (user.role === "Admin" || user.role === "Manager") { %>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a
+                                                    href="/suppliers/edit/<%= supplier._id %>"
+                                                    class="edit-button"
+                                                >
+                                                    Edit
+                                                </a>
+
+                                                <% if (user.role === "Admin") { %>
+                                                    <form
+                                                        action="/suppliers/delete/<%= supplier._id %>"
+                                                        method="POST"
+                                                        onsubmit="return confirm('Are you sure you want to delete this supplier?');"
+                                                    >
+                                                        <button type="submit" class="delete-button">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                <% } %>
+                                            </div>
+                                        </td>
+                                    <% } %>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+
+            <% } else { %>
+
+                <div class="empty-state">
+                    <div class="empty-state-icon">🏢</div>
+                    <h2>No Suppliers Found</h2>
+                    <p>You haven't added any suppliers yet.</p>
+
+                    <% if (user.role === "Admin" || user.role === "Manager") { %>
+                        <a href="/suppliers/add" class="primary-button">
+                            Add Your First Supplier
+                        </a>
+                    <% } %>
+                </div>
+
+            <% } %>
+
+        </div>
+    </div>
+
+</body>
+</html>
