@@ -11,6 +11,7 @@ const productRoutes = require("./routes/productRoutes");
 const supplierRoutes = require("./routes/supplierRoutes");
 const stockRoutes = require("./routes/stockRoutes")
 const purchaseRoutes = require("./routes/purchaseRoutes");
+const salesRoutes = require("./routes/salesRoutes")
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use("/",productRoutes);
 app.use("/",supplierRoutes);
 app.use("/",stockRoutes);
 app.use("/",purchaseRoutes);
+app.use("/sales",salesRoutes);
 
 
 app.get("/", (req, res) => {
