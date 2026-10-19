@@ -1,3 +1,4 @@
+
 const Product = require("../models/Product");
 const express = require("express");
 const protect = require("../middleware/authMiddleware");
@@ -22,15 +23,15 @@ router.get("/dashboard", protect, async (req, res) => {
 
         const outOfStockCount = products.filter(
             product => product.quantity === 0
-        )
+        ).length;
+
         res.render("dashboard", {
             user: req.user,
             lowStockProducts: products,
             lowStockCount,
             outOfStockCount
-        })
-    }
-    catch (error) {
+        });
+    } catch (error) {
         console.error("Dashboard error:", error);
         res.status(500).send(`Failed to load dashboard ${error.message}`);
     }

@@ -9,10 +9,11 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 const supplierRoutes = require("./routes/supplierRoutes");
-const stockRoutes = require("./routes/stockRoutes")
+const stockRoutes = require("./routes/stockRoutes");
 const purchaseRoutes = require("./routes/purchaseRoutes");
-const salesRoutes = require("./routes/salesRoutes")
-
+const salesRoutes = require("./routes/salesRoutes");
+const reportsRoutes = require("./routes/reportsRoutes");
+const exportRoutes = require("./routes/exportRoutes");
 dotenv.config();
 
 const app = express();
@@ -32,7 +33,8 @@ app.use("/",supplierRoutes);
 app.use("/",stockRoutes);
 app.use("/",purchaseRoutes);
 app.use("/sales",salesRoutes);
-
+app.use("/reports", reportsRoutes);
+app.use("/exports", exportRoutes);
 
 app.get("/", (req, res) => {
     console.log("Home page requested");

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports & Analytics | InventoryPro</title>
+  <link rel="stylesheet" href="/css/style.css">
+
+  <style>
+    .reports-container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    .reports-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .reports-header h1 {
+      margin-bottom: 6px;
+    }
+
+    .reports-header p {
+      color: #64748b;
+    }
+
+    .filter-form {
+      display: flex;
+      align-items: end;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 18px;
+      margin-bottom: 25px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    .filter-form label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .filter-form input {
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+    }
+
+    .report-button {
+      display: inline-block;
+      padding: 10px 16px;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .report-button:hover {
+      background: #1d4ed8;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 18px;
+      margin-bottom: 30px;
+    }
+
+    .report-card {
+      padding: 22px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .report-card p {
+      margin-bottom: 10px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .report-card h2 {
+      margin: 0;
+      font-size: 27px;
+      color: #0f172a;
+    }
+
+    .report-section {
+      margin-bottom: 28px;
+      padding: 22px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    .report-section h2 {
+      margin-bottom: 16px;
+    }
+
+    .report-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .report-table th,
+    .report-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+
+    .report-table th {
+      background: #f8fafc;
+      color: #334155;
+    }
+
+    .stock-warning {
+      color: #b45309;
+      font-weight: 600;
+    }
+
+    .stock-empty {
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .empty-message {
+      padding: 18px 0;
+      color: #64748b;
+    }
+
+    @media (max-width: 600px) {
+      .reports-container {
+        padding: 12px;
+      }
+
+      .filter-form {
+        align-items: stretch;
+      }
+
+      .filter-form input {
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="reports-container">
+    <header class="reports-header">
+      <div>
+        <h1>Reports & Analytics</h1>
+        <p>Review sales, purchases, and inventory performance.</p>
+      </div>
+
+      <a href="/dashboard" class="report-button">
+        Back to Dashboard
+      </a>
+    </header>
+
+    <form action="/reports" method="GET" class="filter-form">
+      <div>
+        <label for="startDate">Start Date</label>
+        <input type="date" id="startDate" name="startDate" value="<%= startDate %>" required>
+      </div>
+
+      <div>
+        <label for="endDate">End Date</label>
+        <input type="date" id="endDate" name="endDate" value="<%= endDate %>" required>
+      </div>
+
+      <button type="submit" class="report-button">
+        Generate Report
+      </button>
+    </form>
+
+    <section class="report-grid">
+      <article class="report-card">
+        <p>Total Sales Revenue</p>
+        <h2>₹<%= totalRevenue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+        </h2>
+      </article>
+
+      <article class="report-card">
+        <p>Purchase Expenditure</p>
+        <h2>₹<%= totalPurchaseCost.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+        </h2>
+      </article>
+
+      <article class="report-card">
+        <p>Number of Sales</p>
+        <h2>
+          <%= sales.length %>
+        </h2>
+      </article>
+
+      <article class="report-card">
+        <p>Units Sold</p>
+        <h2>
+          <%= totalUnitsSold %>
+        </h2>
+      </article>
+
+      <article class="report-card">
+        <p>Total Products</p>
+        <h2>
+          <%= totalProducts %>
+        </h2>
+      </article>
+
+      <article class="report-card">
+        <p>Total Stock Units</p>
+        <h2>
+          <%= totalStockUnits %>
+        </h2>
+      </article>
+    </section>
+
+    <section class="report-section">
+      <h2>Inventory Status</h2>
+
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>SKU</th>
+              <th>Current Quantity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% if (products.length===0) { %>
+              <tr>
+                <td colspan="4" class="empty-message">
+                  No products found.
+                </td>
+              </tr>
+              <% } %>
+
+                <% products.forEach((product)=> { %>
+                  <tr>
+                    <td>
+                      <%= product.name || product.productName || "Unnamed Product" %>
+                    </td>
+
+                    <td>
+                      <%= product.sku || "-" %>
+                    </td>
+
+                    <td>
+                      <%= product.quantity ?? 0 %>
+                    </td>
+
+                    <td>
+                      <% if (Number(product.quantity || 0)===0) { %>
+                        <span class="stock-empty">Out of Stock</span>
+                        <% } else if ( Number(product.quantity) <=Number(product.lowStockThreshold ?? 5) ) { %>
+                          <span class="stock-warning">Low Stock</span>
+                          <% } else { %>
+                            In Stock
+                            <% } %>
+                    </td>
+                  </tr>
+                  <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Low-stock products:
+        <strong>
+          <%= lowStockProducts.length %>
+        </strong>
+        &nbsp; | &nbsp;
+        Out-of-stock products:
+        <strong>
+          <%= outOfStockProducts.length %>
+        </strong>
+      </p>
+    </section>
+
+    <section class="report-section">
+      <h2>Recent Sales in Selected Period</h2>
+
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Sale ID</th>
+              <th>Date</th>
+              <th>Units</th>
+              <th>Total Amount</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% if (sales.length===0) { %>
+              <tr>
+                <td colspan="4" class="empty-message">
+                  No sales found for this date range.
+                </td>
+              </tr>
+              <% } %>
+
+                <% sales.forEach((sale)=> { %>
+                  <tr>
+                    <td>
+                      <%= String(sale._id).slice(-8) %>
+                    </td>
+
+                    <td>
+                      <%= new Date(sale.saleDate).toLocaleDateString("en-IN") %>
+                    </td>
+
+                    <td>
+                      <%= sale.items.reduce( (sum, item)=> sum + Number(item.quantity || 0),
+                        0
+                        ) %>
+                    </td>
+
+                    <td>
+                      ₹<%= Number(sale.totalAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2,
+                        maximumFractionDigits: 2 }) %>
+                    </td>
+                  </tr>
+                  <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-section">
+      <h2>Purchases in Selected Period</h2>
+
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Purchase ID</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Calculated Cost</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% if (purchases.length===0) { %>
+              <tr>
+                <td colspan="4" class="empty-message">
+                  No purchases found for this date range.
+                </td>
+              </tr>
+              <% } %>
+
+                <% purchases.forEach((purchase)=> { %>
+                  <% const purchaseCost=purchase.items.reduce( (sum, item)=>
+                    sum +
+                    Number(item.quantity || 0) *
+                    Number(item.purchasePrice || 0),
+                    0
+                    ); %>
+
+                    <tr>
+                      <td>
+                        <%= String(purchase._id).slice(-8) %>
+                      </td>
+
+                      <td>
+                        <%= new Date(purchase.createdAt).toLocaleDateString("en-IN") %>
+                      </td>
+
+                      <td>
+                        <%= purchase.items.length %>
+                      </td>
+
+                      <td>
+                        ₹<%= purchaseCost.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2
+                          }) %>
+                      </td>
+                    </tr>
+                    <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+
+</html>
