@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | InventoryPro</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .users-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .users-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .users-card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .users-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .users-form input,
+        .users-form select,
+        .role-form select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .users-btn {
+            background: #2563eb;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .users-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .users-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 13px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .users-table th {
+            background: #f3f4f6;
+        }
+
+        @media (max-width: 600px) {
+            .users-container {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="users-container">
+        <header class="users-header">
+            <div>
+                <h1>User Management</h1>
+                <p>Manage users and their access roles.</p>
+            </div>
+            <a href="/dashboard" class="users-btn">Back to Dashboard</a>
+        </header>
+
+        <section class="users-card">
+            <h2>Add New User</h2>
+
+            <form action="/users/add" method="POST" class="users-form">
+                <input type="text" name="name" placeholder="Full Name" required>
+
+                <input type="email" name="email" placeholder="Email Address" required>
+
+                <input type="password" name="password"
+                       placeholder="Password (minimum 8 characters)"
+                       minlength="8" required>
+
+                <select name="role" required>
+                    <option value="Staff">Staff</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Admin">Admin</option>
+                </select>
+
+                <button type="submit" class="users-btn">Create User</button>
+            </form>
+        </section>
+
+        <section class="users-card">
+            <h2>Registered Users</h2>
+
+            <div class="users-table-wrapper">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Current Role</th>
+                            <th>Created</th>
+                            <th>Update Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (users && users.length > 0) { %>
+                            <% users.forEach(user => { %>
+                                <tr>
+                                    <td><%= user.name %></td>
+                                    <td><%= user.email %></td>
+                                    <td><%= user.role %></td>
+                                    <td>
+                                        <%= user.createdAt
+                                            ? new Date(user.createdAt).toLocaleDateString()
+                                            : "N/A" %>
+                                    </td>
+                                    <td>
+                                        <form
+                                            action="/users/<%= user._id %>/role"
+                                            method="POST"
+                                            class="role-form">
+
+                                            <select name="role" required>
+                                                <option value="Staff"
+                                                    <%= user.role === "Staff" ? "selected" : "" %>>
+                                                    Staff
+                                                </option>
+                                                <option value="Manager"
+                                                    <%= user.role === "Manager" ? "selected" : "" %>>
+                                                    Manager
+                                                </option>
+                                                <option value="Admin"
+                                                    <%= user.role === "Admin" ? "selected" : "" %>>
+                                                    Admin
+                                                </option>
+                                            </select>
+
+                                            <button type="submit" class="users-btn">
+                                                Update
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="5">No users found.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

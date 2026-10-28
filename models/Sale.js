@@ -10,7 +10,11 @@ const saleSchema = new mongoose.Schema({
         quantity: {
             type: Number,
             required: true,
-            min: 1
+            min: 1,
+            validate : {
+                validator : Number.isSafeInteger,
+                message : "Quantity must be a positive integer."
+            }
         },
         sellingPrice: {
             type: Number,

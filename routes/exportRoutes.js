@@ -13,17 +13,7 @@ const router = express.Router();
 
 // Protect all export routes
 router.use(protect);
-router.use((req, res, next) => {
-  const referer = req.get("Referer");
 
-  if (!referer || !referer.startsWith("http://localhost:3000/reports")) {
-    return res.status(403).send(
-      "Please download reports from the Reports page."
-    );
-  }
-
-  next();
-});
 
 // Convert values safely for CSV
 function escapeCSV(value) {

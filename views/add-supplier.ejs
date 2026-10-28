@@ -24,6 +24,7 @@
             </div>
 
             <form action="/suppliers/add" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
                 <div class="form-group">
                     <label for="name">Contact Person Name *</label>

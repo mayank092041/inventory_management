@@ -56,6 +56,14 @@ router.post(
                 sku
             } = req.body;
 
+            const lowStockThreshold = Number(req.body.lowStockThreshold);
+
+            if (
+                !Number.isSafeInteger(lowStockThreshold) ||
+                lowStockThreshold < 0
+            ) {
+                return res.status(400).send("Invalid low stock threshold");
+            }
 
             // Check duplicate SKU
 
@@ -242,7 +250,7 @@ router.post(
                     sku
                 },
                 {
-                    runValidators : true
+                    runValidators: true
                 }
             );
 
@@ -267,32 +275,24 @@ router.post(
 // DELETE PRODUCT
 // ========================================
 
-router.get(
+router.post(
     "/products/delete/:id",
     protect,
     allowedRoles("Admin"),
     async (req, res) => {
-
         try {
+            const product = await Product.findByIdAndDelete(req.params.id);
 
-            await Product.findByIdAndDelete(
-                req.params.id
-            );
+            if (!product) {
+                return res.status(404).send("Product not found");
+            }
 
             res.redirect("/products");
-
         } catch (error) {
-
             console.log(error);
-
-            res.status(500).send(
-                "Failed to delete product"
-            );
-
+            res.status(500).send("Failed to delete product");
         }
-
     }
 );
-
 
 module.exports = router;

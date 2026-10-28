@@ -123,7 +123,16 @@ router.post(
                     sellingPrice,
                 });
 
-                totalAmount += quantity * sellingPrice;
+                const lineTotal = quantity * sellingPrice;
+
+                if (
+                    !Number.isFinite(lineTotal) ||
+                    !Number.isFinite(totalAmount + lineTotal)
+                ) {
+                    return res.status(400).send("Sale amount is too large.");
+                }
+
+                totalAmount += lineTotal;
             }
 
             if (!Number.isFinite(totalAmount)) {

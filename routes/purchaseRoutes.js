@@ -140,7 +140,17 @@ router.post(
                     purchasePrice
                 });
 
-                totalAmount += quantity * purchasePrice;
+                const lineTotal = quantity * purchasePrice;
+
+                if (
+                    !Number.isFinite(lineTotal) ||
+                    !Number.isFinite(totalAmount + lineTotal) ||
+                    !Number.isSafeInteger(quantity)
+                ) {
+                    return res.status(400).send("Purchase amount is too large");
+                }
+
+                totalAmount += lineTotal;
             }
 
             if (!Number.isFinite(totalAmount)) {

@@ -8,8 +8,6 @@ const allowedRoles = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-const app = express();
-app.set('view engine', 'ejs');
 
 router.get("/categories", protect, async (req, res) => {
     try {
@@ -90,13 +88,29 @@ router.post(
 
             const { name, description } = req.body;
 
-            await Category.findByIdAndUpdate(
-                req.params.id,
-                {
-                    name,
-                    description
-                }
-            );
+            if (!name || !name.trim()) {
+                return res.status(400).send("Category name is required");
+            }
+
+            const category = await Category.findById(req.params.id);
+
+            if (!category) {
+                return res.status(404).send("Category not found");
+            }
+
+            const duplicate = await Category.findOne({
+                name: name.trim(),
+                _id: { $ne: category._id }
+            });
+
+            if (duplicate) {
+                return res.status(409).send("Category already exists");
+            }
+
+            category.name = name.trim();
+            category.description = description?.trim() || "";
+
+            await category.save();
 
             res.redirect("/categories");
 
@@ -111,28 +125,26 @@ router.post(
     }
 );
 
-router.get(
+
+router.post(
     "/categories/delete/:id",
     protect,
     allowedRoles("Admin"),
     async (req, res) => {
-
         try {
-
-            await Category.findByIdAndDelete(
+            const category = await Category.findByIdAndDelete(
                 req.params.id
             );
 
+            if (!category) {
+                return res.status(404).send("Category not found");
+            }
+
             res.redirect("/categories");
-
         } catch (error) {
-
             console.log(error);
-
             res.status(500).send("Failed to delete category");
-
         }
-
     }
 );
 

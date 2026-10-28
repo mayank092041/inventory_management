@@ -301,6 +301,7 @@
         </header>
 
         <form action="/purchases/add" method="POST" id="purchaseForm">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
             <!-- Supplier Details -->
             <section class="purchase-card">

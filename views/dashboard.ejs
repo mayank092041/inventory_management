@@ -1,6 +1,6 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -289,6 +289,8 @@
             }
         }
 
+
+
         @media (max-width: 480px) {
             .stock-alert-cards {
                 grid-template-columns: 1fr;
@@ -324,9 +326,12 @@
                     View Products
                 </a>
 
-                <a href="/logout" class="dashboard-btn logout">
-                    Logout
-                </a>
+                <form action="/logout" method="POST" style="display: inline;">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="dashboard-btn logout">
+                        Logout
+                    </button>
+                </form>
             </div>
         </header>
 
@@ -337,7 +342,9 @@
             </h2>
 
             <p>
-                You are logged in as <strong><%= user.role %></strong>.
+                You are logged in as <strong>
+                    <%= user.role %>
+                </strong>.
                 Here is your current inventory overview.
             </p>
         </section>
@@ -351,9 +358,6 @@
                     <p>Products that need your attention.</p>
                 </div>
 
-                <a href="/products" class="dashboard-btn">
-                    View Products
-                </a>
             </div>
 
             <div class="stock-alert-cards">
@@ -373,7 +377,7 @@
                     <span class="alert-label">Out of Stock</span>
 
                     <p class="alert-count">
-                        <%= outOfStockCount  %>
+                        <%= outOfStockCount %>
                     </p>
 
                     <p class="alert-description">
@@ -382,7 +386,7 @@
                 </div>
             </div>
 
-            <% if (lowStockProducts.length > 0) { %>
+            <% if (lowStockProducts.length> 0) { %>
 
                 <h3 class="dashboard-section-title">
                     Products Requiring Attention
@@ -401,42 +405,48 @@
                         </thead>
 
                         <tbody>
-                            <% lowStockProducts.forEach(product => { %>
+                            <% lowStockProducts.forEach(product=> { %>
                                 <tr>
-                                    <td><%= product.name %></td>
-                                    <td><%= product.sku %></td>
-                                    <td><%= product.quantity %></td>
+                                    <td>
+                                        <%= product.name %>
+                                    </td>
+                                    <td>
+                                        <%= product.sku %>
+                                    </td>
+                                    <td>
+                                        <%= product.quantity %>
+                                    </td>
                                     <td>
                                         <%= product.lowStockThreshold ?? 5 %>
                                     </td>
                                     <td>
-                                        <% if (product.quantity === 0) { %>
+                                        <% if (product.quantity===0) { %>
                                             <span class="stock-status out">
                                                 Out of Stock
                                             </span>
-                                        <% } else { %>
-                                            <span class="stock-status low">
-                                                Low Stock
-                                            </span>
-                                        <% } %>
+                                            <% } else { %>
+                                                <span class="stock-status low">
+                                                    Low Stock
+                                                </span>
+                                                <% } %>
                                     </td>
                                 </tr>
-                            <% }); %>
+                                <% }); %>
                         </tbody>
                     </table>
                 </div>
 
-            <% } else { %>
+                <% } else { %>
 
-                <div class="stock-empty-state">
-                    <h3>All products have sufficient stock</h3>
-                    <p>
-                        There are currently no products that meet the
-                        low-stock alert condition.
-                    </p>
-                </div>
+                    <div class="stock-empty-state">
+                        <h3>All products have sufficient stock</h3>
+                        <p>
+                            There are currently no products that meet the
+                            low-stock alert condition.
+                        </p>
+                    </div>
 
-            <% } %>
+                    <% } %>
 
         </section>
 
@@ -466,7 +476,7 @@
                     <p>Review stock-in and stock-out transactions.</p>
                 </a>
 
-                <% if (["Admin", "Manager"].includes(user.role)) { %>
+                <% if (["Admin", "Manager" ].includes(user.role)) { %>
                     <a href="/stock/adjust" class="quick-link-card">
                         <h3>Adjust Stock</h3>
                         <p>Record incoming or outgoing stock.</p>
@@ -476,11 +486,24 @@
                         <h3>Add Product</h3>
                         <p>Add a new product to your inventory.</p>
                     </a>
-                <% } %>
+                    <% } %>
+                        <!-- Sales -->
+                        <a href="/sales" class="quick-link-card">
+                            <h3>Sales</h3>
+                            <p>View sales records and manage sales transactions.</p>
+                        </a>
+
+                        <!-- Reports -->
+                        <a href="/reports" class="quick-link-card">
+                            <h3>Reports & Analytics</h3>
+                            <p>View sales, purchases, and inventory reports.</p>
+                        </a>
+
 
             </div>
         </section>
 
     </main>
 </body>
+
 </html>

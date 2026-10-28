@@ -198,6 +198,7 @@
         </header>
 
         <form action="/sales/add" method="POST" id="saleForm">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <section class="sales-card">
                 <h2>Sale Items</h2>
                 <p class="sales-muted">Select a product, enter the quantity and selling price per unit.</p>

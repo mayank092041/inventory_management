@@ -148,6 +148,12 @@
       color: #64748b;
     }
 
+    .report-exports {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
     @media (max-width: 600px) {
       .reports-container {
         padding: 12px;
@@ -192,7 +198,37 @@
       <button type="submit" class="report-button">
         Generate Report
       </button>
+
     </form>
+    <section class="report-section">
+      <h2>Download Reports</h2>
+
+      <div class="report-exports">
+        <a class="report-button" href="/exports/sales?format=csv">
+          Download Sales CSV
+        </a>
+
+        <a class="report-button" href="/exports/sales?format=xlsx">
+          Download Sales Excel
+        </a>
+
+        <a class="report-button" href="/exports/purchases?format=csv">
+          Download Purchases CSV
+        </a>
+
+        <a class="report-button" href="/exports/purchases?format=xlsx">
+          Download Purchases Excel
+        </a>
+
+        <a class="report-button" href="/exports/inventory?format=csv">
+          Download Inventory CSV
+        </a>
+
+        <a class="report-button" href="/exports/inventory?format=xlsx">
+          Download Inventory Excel
+        </a>
+      </div>
+    </section>
 
     <section class="report-grid">
       <article class="report-card">

@@ -1,50 +1,54 @@
 const mongoose = require("mongoose");
 
 const stockMovementSchema = new mongoose.Schema({
-    product : {
-        type : mongoose.Schema.Types.ObjectId,
-        ref : "Product",
-        required : true
+    product: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+        required: true
     },
 
-    type : {
-        type : String,
-        enum : ["Stock In", "Stock Out"],
-        required : true
+    type: {
+        type: String,
+        enum: ["Stock In", "Stock Out"],
+        required: true
     },
 
-    quantity : {
-        type : Number,
-        required : true,
-        min : 1
-    },
-    
-    previousQuantity : {
-        type : Number,
-        required : true,
-        min : 0
+    quantity: {
+        type: Number,
+        required: true,
+        min: 1,
+        validate: {
+            validator: Number.isSafeInteger,
+            message: "Quantity must be a positive integer."
+        }
     },
 
-    newQuantity : {
-        type : Number,
-        required : true,
-        min : 0
+    previousQuantity: {
+        type: Number,
+        required: true,
+        min: 0
     },
 
-    reason : {
-        type : String,
-        requires : true,
-        trim : true,
+    newQuantity: {
+        type: Number,
+        required: true,
+        min: 0
     },
 
-    performedBy : {
-        type : mongoose.Schema.Types.ObjectId,
-        ref : "User",
-        required : true,
+    reason: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+
+    performedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
     }
-    },
+},
     {
-        timestamps : true
+        timestamps: true
     }
 );
 

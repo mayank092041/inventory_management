@@ -26,6 +26,7 @@
             <% if (products.length > 0) { %>
 
                 <form action="/stock/adjust" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
                     <div class="form-group">
                         <label for="productId">Select Product *</label>

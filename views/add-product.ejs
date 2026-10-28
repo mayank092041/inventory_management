@@ -138,6 +138,7 @@
         <p class="required-note">Fields marked with * are required.</p><br><br>
 
         <form action="/products/add" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
             <!-- Product Name -->
             <div class="form-group">
