@@ -1,39 +1,88 @@
 
-const Product = require("../models/Product");
 const express = require("express");
+
+const Product = require("../models/Product");
+const StockMovement = require("../models/StockMovement");
+
 const protect = require("../middleware/authMiddleware");
-const allowRoles = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
 router.get("/dashboard", protect, async (req, res) => {
     try {
-        const products = await Product.find({
+        // Get total number of products
+        const totalProducts = await Product.countDocuments();
+
+        // Get low-stock and out-of-stock products
+        const lowStockProducts = await Product.find({
             $expr: {
                 $lte: [
                     "$quantity",
                     { $ifNull: ["$lowStockThreshold", 5] }
                 ]
             }
-        }).sort({ quantity: 1 });
+        })
+            .populate("category", "name")
+            .sort({ quantity: 1 })
+            .limit(10);
 
-        const lowStockCount = products.filter(
-            product => product.quantity > 0
-        ).length;
-
-        const outOfStockCount = products.filter(
-            product => product.quantity === 0
-        ).length;
-
-        res.render("dashboard", {
-            user: req.user,
-            lowStockProducts: products,
-            lowStockCount,
-            outOfStockCount
+        // Count low-stock products (excluding out-of-stock)
+        const lowStockCount = await Product.countDocuments({
+            quantity: { $gt: 0 },
+            $expr: {
+                $lte: [
+                    "$quantity",
+                    { $ifNull: ["$lowStockThreshold", 5] }
+                ]
+            }
         });
+
+        // Count out-of-stock products
+        const outOfStockCount = await Product.countDocuments({
+            quantity: 0
+        });
+
+        // Calculate total inventory value
+        const inventoryResult = await Product.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    inventoryValue: {
+                        $sum: {
+                            $multiply: ["$price", "$quantity"]
+                        }
+                    },
+                    totalUnits: {
+                        $sum: "$quantity"
+                    }
+                }
+            }
+        ]);
+
+        const inventoryValue = inventoryResult[0]?.inventoryValue || 0;
+        const totalUnits = inventoryResult[0]?.totalUnits || 0;
+
+        // Get recent stock movements
+        const recentMovements = await StockMovement.find()
+            .populate("product", "name sku")
+            .populate("performedBy", "name")
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        return res.render("dashboard", {
+            user: req.user,
+            totalProducts,
+            lowStockProducts,
+            lowStockCount,
+            outOfStockCount,
+            inventoryValue,
+            totalUnits,
+            recentMovements
+        });
+
     } catch (error) {
-        console.error("Dashboard error:", error);
-        res.status(500).send(`Failed to load dashboard ${error.message}`);
+        console.error("Dashboard error:", error.message);
+        return res.status(500).send("Failed to load dashboard");
     }
 });
 

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -47,10 +48,12 @@
             padding: 11px 18px;
             border-radius: 8px;
             background: #2563eb;
-            color: #ffffff;
+            color: white;
             text-decoration: none;
             font-weight: 600;
             font-size: 14px;
+            border: none;
+            cursor: pointer;
         }
 
         .dashboard-btn:hover {
@@ -58,7 +61,7 @@
         }
 
         .dashboard-btn.logout {
-            background: #ffffff;
+            background: white;
             border: 1px solid #cbd5e1;
             color: #334155;
         }
@@ -72,7 +75,7 @@
             margin-bottom: 28px;
             border-radius: 14px;
             background: linear-gradient(120deg, #1d4ed8, #4338ca);
-            color: #ffffff;
+            color: white;
         }
 
         .dashboard-welcome h2 {
@@ -92,97 +95,101 @@
             font-size: 21px;
         }
 
-        .stock-alert-section {
+        /* Statistics Cards */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 12px;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .stat-card .stat-value {
+            margin: 0;
+            color: #0f172a;
+            font-size: 26px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .stat-card .stat-description {
+            margin: 8px 0 0;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .stat-card.low {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .stat-card.out {
+            border-left: 4px solid #ef4444;
+        }
+
+        .stat-card.value {
+            border-left: 4px solid #16a34a;
+        }
+
+        /* General Sections */
+        .dashboard-panel {
             padding: 24px;
             margin-bottom: 28px;
-            background: #ffffff;
+            background: white;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
             box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
         }
 
-        .stock-alert-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 22px;
+        .panel-header {
+            margin-bottom: 20px;
         }
 
-        .stock-alert-header h2 {
+        .panel-header h2 {
             margin: 0 0 6px;
             color: #0f172a;
             font-size: 22px;
         }
 
-        .stock-alert-header p {
+        .panel-header p {
             margin: 0;
             color: #64748b;
             font-size: 14px;
         }
 
-        .stock-alert-cards {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-            margin-bottom: 24px;
-        }
-
-        .stock-alert-card {
-            padding: 22px;
-            border-radius: 12px;
-            border: 1px solid transparent;
-        }
-
-        .stock-alert-card.low {
-            background: #fffbeb;
-            border-color: #fde68a;
-            color: #92400e;
-        }
-
-        .stock-alert-card.out {
-            background: #fef2f2;
-            border-color: #fecaca;
-            color: #991b1b;
-        }
-
-        .stock-alert-card .alert-label {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .stock-alert-card .alert-count {
-            margin: 0;
-            font-size: 32px;
-            font-weight: 700;
-        }
-
-        .stock-alert-card .alert-description {
-            margin: 8px 0 0;
-            font-size: 13px;
-        }
-
-        .stock-alert-table-wrapper {
+        /* Tables */
+        .table-wrapper {
             width: 100%;
             overflow-x: auto;
         }
 
-        .stock-alert-table {
+        .dashboard-table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
         }
 
-        .stock-alert-table th,
-        .stock-alert-table td {
+        .dashboard-table th,
+        .dashboard-table td {
             padding: 14px 16px;
             border-bottom: 1px solid #e2e8f0;
             white-space: nowrap;
         }
 
-        .stock-alert-table th {
+        .dashboard-table th {
             background: #f8fafc;
             color: #475569;
             font-size: 12px;
@@ -190,12 +197,12 @@
             letter-spacing: 0.04em;
         }
 
-        .stock-alert-table td {
+        .dashboard-table td {
             color: #334155;
             font-size: 14px;
         }
 
-        .stock-alert-table tbody tr:hover {
+        .dashboard-table tbody tr:hover {
             background: #f8fafc;
         }
 
@@ -217,7 +224,17 @@
             color: #991b1b;
         }
 
-        .stock-empty-state {
+        .stock-status.in {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .stock-status.movement-out {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .empty-state {
             padding: 24px;
             text-align: center;
             background: #f0fdf4;
@@ -226,15 +243,16 @@
             color: #166534;
         }
 
-        .stock-empty-state h3 {
+        .empty-state h3 {
             margin: 0 0 8px;
         }
 
-        .stock-empty-state p {
+        .empty-state p {
             margin: 0;
             font-size: 14px;
         }
 
+        /* Quick Links */
         .dashboard-quick-links {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -244,7 +262,7 @@
         .quick-link-card {
             display: block;
             padding: 22px;
-            background: #ffffff;
+            background: white;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             text-decoration: none;
@@ -269,6 +287,12 @@
             line-height: 1.6;
         }
 
+        @media (max-width: 1100px) {
+            .dashboard-stats {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
         @media (max-width: 768px) {
             .dashboard-page {
                 padding: 18px;
@@ -279,9 +303,8 @@
                 flex-direction: column;
             }
 
-            .stock-alert-header {
-                align-items: flex-start;
-                flex-direction: column;
+            .dashboard-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
             .dashboard-quick-links {
@@ -289,10 +312,8 @@
             }
         }
 
-
-
         @media (max-width: 480px) {
-            .stock-alert-cards {
+            .dashboard-stats {
                 grid-template-columns: 1fr;
             }
 
@@ -304,100 +325,159 @@
                 font-size: 25px;
             }
 
-            .stock-alert-section {
+            .dashboard-panel {
                 padding: 16px;
+            }
+
+            .stat-card .stat-value {
+                font-size: 23px;
             }
         }
     </style>
 </head>
 
 <body>
+
     <main class="dashboard-page">
 
         <!-- Dashboard Header -->
         <header class="dashboard-header">
+
             <div>
                 <h1>Inventory Dashboard</h1>
                 <p>Monitor your inventory and stock levels.</p>
             </div>
 
             <div class="dashboard-header-actions">
+
                 <a href="/products" class="dashboard-btn">
                     View Products
                 </a>
 
                 <form action="/logout" method="POST" style="display: inline;">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
                     <button type="submit" class="dashboard-btn logout">
                         Logout
                     </button>
                 </form>
+
             </div>
+
         </header>
 
         <!-- Welcome Section -->
         <section class="dashboard-welcome">
-            <h2>
-                Welcome, <%= user.name %>!
-            </h2>
+
+            <h2>Welcome, <%= user.name %>!</h2>
 
             <p>
-                You are logged in as <strong>
-                    <%= user.role %>
-                </strong>.
+                You are logged in as
+                <strong><%= user.role %></strong>.
                 Here is your current inventory overview.
             </p>
+
+        </section>
+
+        <!-- Dashboard Statistics -->
+        <section>
+
+            <h2 class="dashboard-section-title">
+                Inventory Overview
+            </h2>
+
+            <div class="dashboard-stats">
+
+                <div class="stat-card">
+                    <h3>Total Products</h3>
+
+                    <p class="stat-value">
+                        <%= totalProducts || 0 %>
+                    </p>
+
+                    <p class="stat-description">
+                        Products in your inventory
+                    </p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Total Stock Units</h3>
+
+                    <p class="stat-value">
+                        <%= totalUnits || 0 %>
+                    </p>
+
+                    <p class="stat-description">
+                        Total available quantity
+                    </p>
+                </div>
+
+                <div class="stat-card low">
+                    <h3>Low Stock Items</h3>
+
+                    <p class="stat-value">
+                        <%= lowStockCount || 0 %>
+                    </p>
+
+                    <p class="stat-description">
+                        Products needing attention
+                    </p>
+                </div>
+
+                <div class="stat-card out">
+                    <h3>Out of Stock</h3>
+
+                    <p class="stat-value">
+                        <%= outOfStockCount || 0 %>
+                    </p>
+
+                    <p class="stat-description">
+                        Products with zero quantity
+                    </p>
+                </div>
+
+                <div class="stat-card value">
+                    <h3>Inventory Value</h3>
+
+                    <p class="stat-value">
+                        <%= Number(inventoryValue || 0).toLocaleString("en-IN", {
+                            style: "currency",
+                            currency: "INR",
+                            maximumFractionDigits: 2
+                        }) %>
+                    </p>
+
+                    <p class="stat-description">
+                        Total value of available stock
+                    </p>
+                </div>
+
+            </div>
+
         </section>
 
         <!-- Stock Alerts -->
-        <section class="stock-alert-section">
+        <section class="dashboard-panel">
 
-            <div class="stock-alert-header">
-                <div>
-                    <h2>Stock Alerts</h2>
-                    <p>Products that need your attention.</p>
-                </div>
+            <div class="panel-header">
+
+                <h2>Stock Alerts</h2>
+
+                <p>Products that need your attention.</p>
 
             </div>
 
-            <div class="stock-alert-cards">
-                <div class="stock-alert-card low">
-                    <span class="alert-label">Low Stock</span>
+            <% if (lowStockProducts && lowStockProducts.length > 0) { %>
 
-                    <p class="alert-count">
-                        <%= lowStockCount %>
-                    </p>
+                <div class="table-wrapper">
 
-                    <p class="alert-description">
-                        Products below their stock threshold.
-                    </p>
-                </div>
+                    <table class="dashboard-table">
 
-                <div class="stock-alert-card out">
-                    <span class="alert-label">Out of Stock</span>
-
-                    <p class="alert-count">
-                        <%= outOfStockCount %>
-                    </p>
-
-                    <p class="alert-description">
-                        Products with zero available quantity.
-                    </p>
-                </div>
-            </div>
-
-            <% if (lowStockProducts.length> 0) { %>
-
-                <h3 class="dashboard-section-title">
-                    Products Requiring Attention
-                </h3>
-
-                <div class="stock-alert-table-wrapper">
-                    <table class="stock-alert-table">
                         <thead>
                             <tr>
                                 <th>Product</th>
                                 <th>SKU</th>
+                                <th>Category</th>
                                 <th>Available Quantity</th>
                                 <th>Threshold</th>
                                 <th>Status</th>
@@ -405,54 +485,194 @@
                         </thead>
 
                         <tbody>
-                            <% lowStockProducts.forEach(product=> { %>
+
+                            <% lowStockProducts.forEach(product => { %>
+
                                 <tr>
+
                                     <td>
                                         <%= product.name %>
                                     </td>
+
                                     <td>
-                                        <%= product.sku %>
+                                        <%= product.sku || "-" %>
                                     </td>
+
+                                    <td>
+                                        <%= product.category
+                                            ? product.category.name
+                                            : "-" %>
+                                    </td>
+
                                     <td>
                                         <%= product.quantity %>
                                     </td>
+
                                     <td>
                                         <%= product.lowStockThreshold ?? 5 %>
                                     </td>
+
                                     <td>
-                                        <% if (product.quantity===0) { %>
+
+                                        <% if (product.quantity === 0) { %>
+
                                             <span class="stock-status out">
                                                 Out of Stock
                                             </span>
-                                            <% } else { %>
-                                                <span class="stock-status low">
-                                                    Low Stock
-                                                </span>
-                                                <% } %>
+
+                                        <% } else { %>
+
+                                            <span class="stock-status low">
+                                                Low Stock
+                                            </span>
+
+                                        <% } %>
+
                                     </td>
+
                                 </tr>
-                                <% }); %>
+
+                            <% }); %>
+
                         </tbody>
+
                     </table>
+
                 </div>
 
-                <% } else { %>
+            <% } else { %>
 
-                    <div class="stock-empty-state">
-                        <h3>All products have sufficient stock</h3>
-                        <p>
-                            There are currently no products that meet the
-                            low-stock alert condition.
-                        </p>
-                    </div>
+                <div class="empty-state">
 
-                    <% } %>
+                    <h3>All products have sufficient stock</h3>
+
+                    <p>
+                        There are currently no products that meet
+                        the low-stock alert condition.
+                    </p>
+
+                </div>
+
+            <% } %>
 
         </section>
 
-        <!-- Quick Links -->
+        <!-- Recent Stock Movements -->
+        <section class="dashboard-panel">
+
+            <div class="panel-header">
+
+                <h2>Recent Stock Movements</h2>
+
+                <p>Latest stock-in and stock-out transactions.</p>
+
+            </div>
+
+            <% if (recentMovements && recentMovements.length > 0) { %>
+
+                <div class="table-wrapper">
+
+                    <table class="dashboard-table">
+
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Previous Stock</th>
+                                <th>New Stock</th>
+                                <th>Performed By</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <% recentMovements.forEach(movement => { %>
+
+                                <tr>
+
+                                    <td>
+                                        <%= movement.product
+                                            ? movement.product.name
+                                            : "Deleted Product" %>
+                                    </td>
+
+                                    <td>
+
+                                        <% if (movement.type === "Stock In") { %>
+
+                                            <span class="stock-status in">
+                                                Stock In
+                                            </span>
+
+                                        <% } else { %>
+
+                                            <span class="stock-status movement-out">
+                                                Stock Out
+                                            </span>
+
+                                        <% } %>
+
+                                    </td>
+
+                                    <td>
+                                        <%= movement.quantity %>
+                                    </td>
+
+                                    <td>
+                                        <%= movement.previousQuantity %>
+                                    </td>
+
+                                    <td>
+                                        <%= movement.newQuantity %>
+                                    </td>
+
+                                    <td>
+                                        <%= movement.performedBy
+                                            ? movement.performedBy.name
+                                            : "Unknown" %>
+                                    </td>
+
+                                    <td>
+                                        <%= movement.createdAt
+                                            ? new Date(movement.createdAt).toLocaleString("en-IN")
+                                            : "-" %>
+                                    </td>
+
+                                </tr>
+
+                            <% }); %>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            <% } else { %>
+
+                <div class="empty-state">
+
+                    <h3>No Recent Stock Movements</h3>
+
+                    <p>
+                        Stock transactions will appear here when
+                        you add or remove stock.
+                    </p>
+
+                </div>
+
+            <% } %>
+
+        </section>
+
+        <!-- Quick Access -->
         <section>
-            <h2 class="dashboard-section-title">Quick Access</h2>
+
+            <h2 class="dashboard-section-title">
+                Quick Access
+            </h2>
 
             <div class="dashboard-quick-links">
 
@@ -476,7 +696,8 @@
                     <p>Review stock-in and stock-out transactions.</p>
                 </a>
 
-                <% if (["Admin", "Manager" ].includes(user.role)) { %>
+                <% if (["Admin", "Manager"].includes(user.role)) { %>
+
                     <a href="/stock/adjust" class="quick-link-card">
                         <h3>Adjust Stock</h3>
                         <p>Record incoming or outgoing stock.</p>
@@ -486,24 +707,25 @@
                         <h3>Add Product</h3>
                         <p>Add a new product to your inventory.</p>
                     </a>
-                    <% } %>
-                        <!-- Sales -->
-                        <a href="/sales" class="quick-link-card">
-                            <h3>Sales</h3>
-                            <p>View sales records and manage sales transactions.</p>
-                        </a>
 
-                        <!-- Reports -->
-                        <a href="/reports" class="quick-link-card">
-                            <h3>Reports & Analytics</h3>
-                            <p>View sales, purchases, and inventory reports.</p>
-                        </a>
+                <% } %>
 
+                <a href="/sales" class="quick-link-card">
+                    <h3>Sales</h3>
+                    <p>View sales records and manage sales transactions.</p>
+                </a>
+
+                <a href="/reports" class="quick-link-card">
+                    <h3>Reports & Analytics</h3>
+                    <p>View sales, purchases, and inventory reports.</p>
+                </a>
 
             </div>
+
         </section>
 
     </main>
+
 </body>
 
 </html>

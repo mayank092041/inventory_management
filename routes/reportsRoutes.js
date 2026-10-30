@@ -1,5 +1,5 @@
-
 const express = require("express");
+
 const Sale = require("../models/Sale");
 const Purchase = require("../models/Purchase");
 const Product = require("../models/Product");
@@ -9,6 +9,106 @@ const allowedRoles = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
+// Validate a YYYY-MM-DD date
+const parseDateInput = (value) => {
+    if (
+        typeof value !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+        return null;
+    }
+
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return date;
+};
+
+// Format date as YYYY-MM-DD
+const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+};
+
+// Generate daily sales and purchase data
+const generateDailyTrends = (
+    startDate,
+    endDate,
+    sales,
+    purchases
+) => {
+    const dailyData = {};
+
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+        const dateKey = formatDate(currentDate);
+
+        dailyData[dateKey] = {
+            salesRevenueCents: 0,
+            purchaseCostCents: 0
+        };
+
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Calculate daily sales revenue
+    sales.forEach((sale) => {
+        const dateKey = formatDate(new Date(sale.saleDate));
+
+        if (dailyData[dateKey]) {
+            dailyData[dateKey].salesRevenueCents += Math.round(
+                Number(sale.totalAmount || 0) * 100
+            );
+        }
+    });
+
+    // Calculate daily purchase expenditure
+    purchases.forEach((purchase) => {
+        const dateKey = formatDate(new Date(purchase.createdAt));
+
+        if (dailyData[dateKey]) {
+            const purchaseCostCents = purchase.items.reduce(
+                (total, item) => {
+                    const quantity = Number(item.quantity || 0);
+
+                    const priceCents = Math.round(
+                        Number(item.purchasePrice || 0) * 100
+                    );
+
+                    return total + quantity * priceCents;
+                },
+                0
+            );
+
+            dailyData[dateKey].purchaseCostCents += purchaseCostCents;
+        }
+    });
+
+    const labels = Object.keys(dailyData);
+
+    return {
+        labels,
+        salesRevenue: labels.map(
+            date => dailyData[date].salesRevenueCents / 100
+        ),
+        purchaseCost: labels.map(
+            date => dailyData[date].purchaseCostCents / 100
+        )
+    };
+};
+
 // Show reports dashboard
 router.get(
     "/",
@@ -16,7 +116,6 @@ router.get(
     allowedRoles("Admin", "Manager"),
     async (req, res) => {
         try {
-            // Default report period: last 30 days
             const today = new Date();
 
             const defaultEnd = new Date(today);
@@ -27,76 +126,101 @@ router.get(
             defaultStart.setHours(0, 0, 0, 0);
 
             const startDate = req.query.startDate
-                ? new Date(req.query.startDate)
+                ? parseDateInput(req.query.startDate)
                 : defaultStart;
 
             const endDate = req.query.endDate
-                ? new Date(req.query.endDate)
+                ? parseDateInput(req.query.endDate)
                 : defaultEnd;
 
-            // Validate the selected dates
-            if (
-                isNaN(startDate.getTime()) ||
-                isNaN(endDate.getTime()) ||
-                startDate > endDate
-            ) {
+            if (!startDate || !endDate || startDate > endDate) {
                 return res.status(400).send("Invalid date range.");
             }
 
             startDate.setHours(0, 0, 0, 0);
             endDate.setHours(23, 59, 59, 999);
 
-            // Get sales within the selected date range
+            // Maximum report range: one year
+            const maxRangeDays = 366;
+
+            const rangeDays = Math.ceil(
+                (endDate - startDate) / (24 * 60 * 60 * 1000)
+            );
+
+            if (rangeDays > maxRangeDays) {
+                return res.status(400).send(
+                    "Please select a date range of one year or less."
+                );
+            }
+
+            // Fetch sales within selected date range
             const sales = await Sale.find({
                 saleDate: {
                     $gte: startDate,
-                    $lte: endDate,
-                },
+                    $lte: endDate
+                }
             }).sort({ saleDate: -1 });
 
-            // Get purchases within the selected date range
+            // Fetch purchases within selected date range
             const purchases = await Purchase.find({
                 createdAt: {
                     $gte: startDate,
-                    $lte: endDate,
-                },
+                    $lte: endDate
+                }
             }).sort({ createdAt: -1 });
 
-            // Get all products for inventory analysis
+            // Fetch current inventory
             const products = await Product.find().sort({ name: 1 });
 
-            // Calculate sales statistics
-            const totalRevenue = sales.reduce(
-                (total, sale) => total + Number(sale.totalAmount || 0),
+            // Calculate total sales revenue in cents
+            const totalRevenueCents = sales.reduce(
+                (total, sale) => {
+                    return total + Math.round(
+                        Number(sale.totalAmount || 0) * 100
+                    );
+                },
                 0
             );
 
-            const totalUnitsSold = sales.reduce((total, sale) => {
-                return (
-                    total +
-                    sale.items.reduce(
-                        (itemTotal, item) =>
-                            itemTotal + Number(item.quantity || 0),
+            const totalRevenue = totalRevenueCents / 100;
+
+            // Calculate total units sold
+            const totalUnitsSold = sales.reduce(
+                (total, sale) => {
+                    return total + sale.items.reduce(
+                        (sum, item) =>
+                            sum + Number(item.quantity || 0),
                         0
-                    )
-                );
-            }, 0);
+                    );
+                },
+                0
+            );
 
-            // Calculate purchase expenditure
-            // Assumes each purchase item contains quantity and purchasePrice.
-            const totalPurchaseCost = purchases.reduce((total, purchase) => {
-                const purchaseAmount = purchase.items.reduce(
-                    (itemTotal, item) =>
-                        itemTotal +
-                        Number(item.quantity || 0) *
-                        Number(item.purchasePrice || 0),
-                    0
-                );
+            // Calculate purchase expenditure in cents
+            const totalPurchaseCostCents = purchases.reduce(
+                (total, purchase) => {
+                    const purchaseCents = purchase.items.reduce(
+                        (sum, item) => {
+                            const quantity = Number(item.quantity || 0);
 
-                return total + purchaseAmount;
-            }, 0);
+                            const priceCents = Math.round(
+                                Number(item.purchasePrice || 0) * 100
+                            );
 
-            // Inventory statistics
+                            return sum + quantity * priceCents;
+                        },
+                        0
+                    );
+
+                    return total + purchaseCents;
+                },
+                0
+            );
+
+            const totalPurchaseCost =
+                totalPurchaseCostCents / 100;
+
+            // Inventory calculations
             const totalProducts = products.length;
 
             const totalStockUnits = products.reduce(
@@ -106,44 +230,59 @@ router.get(
             );
 
             const outOfStockProducts = products.filter(
-                (product) => Number(product.quantity || 0) === 0
+                product => Number(product.quantity || 0) === 0
             );
 
-            // Default low-stock rule: quantity from 1 to 5
-            const lowStockProducts = products.filter((product) => {
+            const lowStockProducts = products.filter(product => {
                 const quantity = Number(product.quantity || 0);
-                const threshold = Number(product.lowStockThreshold ?? 5);
+
+                const threshold = Number(
+                    product.lowStockThreshold ?? 5
+                );
 
                 return quantity > 0 && quantity <= threshold;
             });
 
-            // Format dates for the HTML date inputs
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, "0");
-                const day = String(date.getDate()).padStart(2, "0");
+            // Generate daily chart data
+            const dailyTrends = generateDailyTrends(
+                startDate,
+                endDate,
+                sales,
+                purchases
+            );
 
-                return `${year}-${month}-${day}`;
-            };
-
-            res.render("reports", {
+            return res.render("reports", {
                 user: req.user,
+
                 sales,
                 purchases,
                 products,
+
                 totalRevenue,
                 totalUnitsSold,
                 totalPurchaseCost,
+
+                totalSalesTransactions: sales.length,
+                totalPurchaseTransactions: purchases.length,
+
                 totalProducts,
                 totalStockUnits,
+
                 outOfStockProducts,
                 lowStockProducts,
+
+                dailyTrends,
+
                 startDate: formatDate(startDate),
-                endDate: formatDate(endDate),
+                endDate: formatDate(endDate)
             });
+
         } catch (error) {
             console.error("Reports error:", error);
-            res.status(500).send("Unable to generate reports.");
+
+            return res.status(500).send(
+                "Unable to generate reports."
+            );
         }
     }
 );

@@ -1,52 +1,79 @@
+
 const express = require("express");
 
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 
 const protect = require("../middleware/authMiddleware");
-
 const allowedRoles = require("../middleware/roleMiddleware");
-const app = express()
-app.use(express.urlencoded({ encoded: true }))
-
 
 const router = express.Router();
 
+// Validate MongoDB ObjectId
+const isValidId = (id) => /^[a-f\d]{24}$/i.test(id);
 
+// Validate and parse a non-negative whole number
+const parseNonNegativeInteger = (value, fieldName) => {
+    if (
+        typeof value !== "string" ||
+        !/^\d+$/.test(value.trim())
+    ) {
+        throw new Error(`${fieldName} must be a non-negative whole number`);
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isSafeInteger(parsed) || parsed < 0) {
+        throw new Error(`Invalid ${fieldName}`);
+    }
+
+    return parsed;
+};
+
+// Display all products
 router.get("/products", protect, async (req, res) => {
     try {
-        const products = await Product.find().populate("category").sort({ createdAt: -1 });
+        const products = await Product.find()
+            .populate("category")
+            .sort({ createdAt: -1 });
 
-        res.render("products", { products, user: req.user });
-    }
-    catch (error) {
-        console.log(error);
-        res.status(500).send("Failed to load products");
-
-    }
-});
-
-router.get("/products/add", protect, allowedRoles("Admin", "Manager"), async (req, res) => {
-    try {
-        const categories = await Category.find().sort({ name: 1 });
-
-        res.render("add-product", { categories, user: req.user });
-
-    }
-    catch (error) {
-        console.log(error);
-        res.status(500).send("Failed to load add product page");
+        return res.render("products", {
+            products,
+            user: req.user
+        });
+    } catch (error) {
+        console.error("Failed to load products:", error.message);
+        return res.status(500).send("Failed to load products");
     }
 });
 
+// Display add product page
+router.get(
+    "/products/add",
+    protect,
+    allowedRoles("Admin", "Manager"),
+    async (req, res) => {
+        try {
+            const categories = await Category.find().sort({ name: 1 });
+
+            return res.render("add-product", {
+                categories,
+                user: req.user
+            });
+        } catch (error) {
+            console.error("Failed to load add product page:", error.message);
+            return res.status(500).send("Failed to load add product page");
+        }
+    }
+);
+
+// Add product
 router.post(
     "/products/add",
     protect,
     allowedRoles("Admin", "Manager"),
     async (req, res) => {
-
         try {
-
             const {
                 name,
                 description,
@@ -56,133 +83,149 @@ router.post(
                 sku
             } = req.body;
 
-            const lowStockThreshold = Number(req.body.lowStockThreshold);
+            // Validate SKU
+            if (typeof sku !== "string" || !sku.trim()) {
+                return res.status(400).send("SKU is required");
+            }
 
+            const normalizedSku = sku.trim().toUpperCase();
+
+            // Validate product name
+            if (typeof name !== "string" || !name.trim()) {
+                return res.status(400).send("Product name is required");
+            }
+
+            // Validate price
+            const parsedPrice = Number(price);
+
+            if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+                return res.status(400).send("Price must be greater than zero");
+            }
+
+            // Validate quantity
+            let parsedQuantity;
+
+            try {
+                parsedQuantity = parseNonNegativeInteger(
+                    quantity,
+                    "Quantity"
+                );
+            } catch (error) {
+                return res.status(400).send(error.message);
+            }
+
+            // Validate low stock threshold (default 5)
+            let lowStockThreshold;
+
+            try {
+                lowStockThreshold =
+                    req.body.lowStockThreshold === undefined ||
+                    req.body.lowStockThreshold === ""
+                        ? 5
+                        : parseNonNegativeInteger(
+                            req.body.lowStockThreshold,
+                            "Low stock threshold"
+                        );
+            } catch (error) {
+                return res.status(400).send(error.message);
+            }
+
+            // Validate category ID
             if (
-                !Number.isSafeInteger(lowStockThreshold) ||
-                lowStockThreshold < 0
+                typeof category !== "string" ||
+                !isValidId(category)
             ) {
-                return res.status(400).send("Invalid low stock threshold");
+                return res.status(400).send("Invalid category");
+            }
+
+            const existingCategory = await Category.findById(category);
+
+            if (!existingCategory) {
+                return res.status(400).send("Selected category does not exist");
             }
 
             // Check duplicate SKU
-
             const existingProduct = await Product.findOne({
-                sku
+                sku: normalizedSku
             });
 
             if (existingProduct) {
-
-                return res.send("Product with this SKU already exists");
-
+                return res.status(409).send("Product with this SKU already exists");
             }
-
-
-            // Check category
-
-            const existingCategory = await Category.findById(
-                category
-            );
-
-            if (!existingCategory) {
-
-                return res.status(400).send(
-                    "Selected category does not exist"
-                );
-
-            }
-
-
-            // Create product
 
             const product = new Product({
-
-                name,
-                description,
+                name: name.trim(),
+                description:
+                    typeof description === "string"
+                        ? description.trim()
+                        : "",
                 category,
-                price,
-                quantity,
+                price: parsedPrice,
+                quantity: parsedQuantity,
                 lowStockThreshold,
-                sku
-
+                sku: normalizedSku
             });
-
 
             await product.save();
 
-
-            res.redirect("/products");
-
+            return res.redirect("/products");
         } catch (error) {
+            console.error("Failed to add product:", error.message);
 
-            console.log(error);
+            if (error.code === 11000) {
+                return res.status(409).send("Product with this SKU already exists");
+            }
 
-            res.status(500).send("Failed to add product");
+            if (error.name === "ValidationError") {
+                return res.status(400).send("Invalid product details");
+            }
 
+            return res.status(500).send("Failed to add product");
         }
-
     }
 );
 
-
+// Display edit product page
 router.get(
     "/products/edit/:id",
     protect,
     allowedRoles("Admin", "Manager"),
     async (req, res) => {
-
         try {
-
-            const product = await Product.findById(
-                req.params.id
-            );
-
-            if (!product) {
-
-                return res.status(404).send(
-                    "Product not found"
-                );
-
+            if (!isValidId(req.params.id)) {
+                return res.status(400).send("Invalid product ID");
             }
 
+            const product = await Product.findById(req.params.id);
 
-            const categories = await Category.find()
-                .sort({ name: 1 });
+            if (!product) {
+                return res.status(404).send("Product not found");
+            }
 
+            const categories = await Category.find().sort({ name: 1 });
 
-            res.render("edit-product", {
-
+            return res.render("edit-product", {
                 product,
                 categories,
                 user: req.user
-
             });
-
         } catch (error) {
-
-            console.log(error);
-
-            res.status(500).send(
-                "Failed to load product"
-            );
-
+            console.error("Failed to load product:", error.message);
+            return res.status(500).send("Failed to load product");
         }
-
     }
 );
 
-
-// ========================================
-// UPDATE PRODUCT
-// ========================================
-
+// Update product
 router.post(
     "/products/edit/:id",
     protect,
     allowedRoles("Admin", "Manager"),
     async (req, res) => {
-
         try {
+            if (!isValidId(req.params.id)) {
+                return res.status(400).send("Invalid product ID");
+            }
 
             const {
                 name,
@@ -193,104 +236,139 @@ router.post(
                 sku
             } = req.body;
 
-            const lowStockThreshold = Number(req.body.lowStockThreshold);
-            if (
-                !Number.isSafeInteger(lowStockThreshold) ||
-                lowStockThreshold < 0
-            ) {
-                return res.status(400).send("Invalid low stock threshold");
+            // Validate SKU
+            if (typeof sku !== "string" || !sku.trim()) {
+                return res.status(400).send("SKU is required");
             }
 
-            // Check duplicate SKU
+            const normalizedSku = sku.trim().toUpperCase();
 
-            const existingProduct = await Product.findOne({
+            // Validate product name
+            if (typeof name !== "string" || !name.trim()) {
+                return res.status(400).send("Product name is required");
+            }
 
-                sku,
+            // Validate price
+            const parsedPrice = Number(price);
 
-                _id: {
-                    $ne: req.params.id
-                }
+            if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+                return res.status(400).send("Price must be greater than zero");
+            }
 
-            });
+            // Validate quantity
+            let parsedQuantity;
 
-
-            if (existingProduct) {
-
-                return res.send(
-                    "Another product already uses this SKU"
+            try {
+                parsedQuantity = parseNonNegativeInteger(
+                    quantity,
+                    "Quantity"
                 );
-
+            } catch (error) {
+                return res.status(400).send(error.message);
             }
 
+            // Validate low stock threshold (default 5)
+            let lowStockThreshold;
 
-            // Check category
+            try {
+                lowStockThreshold =
+                    req.body.lowStockThreshold === undefined ||
+                    req.body.lowStockThreshold === ""
+                        ? 5
+                        : parseNonNegativeInteger(
+                            req.body.lowStockThreshold,
+                            "Low stock threshold"
+                        );
+            } catch (error) {
+                return res.status(400).send(error.message);
+            }
 
-            const existingCategory = await Category.findById(
-                category
-            );
+            // Validate category ID
+            if (
+                typeof category !== "string" ||
+                !isValidId(category)
+            ) {
+                return res.status(400).send("Invalid category");
+            }
+
+            const existingCategory = await Category.findById(category);
 
             if (!existingCategory) {
-
-                return res.status(400).send(
-                    "Selected category does not exist"
-                );
-
+                return res.status(400).send("Selected category does not exist");
             }
 
+            // Check whether another product uses this SKU
+            const existingProduct = await Product.findOne({
+                sku: normalizedSku,
+                _id: { $ne: req.params.id }
+            });
 
-            await Product.findByIdAndUpdate(
+            if (existingProduct) {
+                return res.status(409).send("Another product already uses this SKU");
+            }
+
+            const updatedProduct = await Product.findByIdAndUpdate(
                 req.params.id,
                 {
-                    name,
-                    description,
+                    name: name.trim(),
+                    description:
+                        typeof description === "string"
+                            ? description.trim()
+                            : "",
                     category,
-                    price,
-                    quantity,
+                    price: parsedPrice,
+                    quantity: parsedQuantity,
                     lowStockThreshold,
-                    sku
+                    sku: normalizedSku
                 },
                 {
-                    runValidators: true
+                    runValidators: true,
+                    returnDocument: "after"
                 }
             );
 
+            if (!updatedProduct) {
+                return res.status(404).send("Product not found");
+            }
 
-            res.redirect("/products");
-
+            return res.redirect("/products");
         } catch (error) {
+            console.error("Failed to update product:", error.message);
 
-            console.log(error);
+            if (error.code === 11000) {
+                return res.status(409).send("Another product already uses this SKU");
+            }
 
-            res.status(500).send(
-                "Failed to update product"
-            );
+            if (error.name === "ValidationError") {
+                return res.status(400).send("Invalid product details");
+            }
 
+            return res.status(500).send("Failed to update product");
         }
-
     }
 );
 
-
-// ========================================
-// DELETE PRODUCT
-// ========================================
-
+// Delete product (Admin only)
 router.post(
     "/products/delete/:id",
     protect,
     allowedRoles("Admin"),
     async (req, res) => {
         try {
+            if (!isValidId(req.params.id)) {
+                return res.status(400).send("Invalid product ID");
+            }
+
             const product = await Product.findByIdAndDelete(req.params.id);
 
             if (!product) {
                 return res.status(404).send("Product not found");
             }
 
-            res.redirect("/products");
+            return res.redirect("/products");
         } catch (error) {
-            console.log(error);
-            res.status(500).send("Failed to delete product");
+            console.error("Failed to delete product:", error.message);
+            return res.status(500).send("Failed to delete product");
         }
     }
 );

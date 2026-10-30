@@ -12,11 +12,7 @@ const allowedRoles = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-
-// ========================================
-// VIEW PURCHASE HISTORY
-// ========================================
-
+// View purchase history
 router.get("/purchases", protect, async (req, res) => {
     try {
         const purchases = await Purchase.find()
@@ -25,22 +21,17 @@ router.get("/purchases", protect, async (req, res) => {
             .populate("items.product")
             .sort({ createdAt: -1 });
 
-        res.render("purchases", {
+        return res.render("purchases", {
             purchases,
             user: req.user
         });
-
     } catch (error) {
-        console.error("Purchase history error:", error);
-        res.status(500).send("Failed to load purchase history");
+        console.error("Purchase history error:", error.message);
+        return res.status(500).send("Failed to load purchase history");
     }
 });
 
-
-// ========================================
-// SHOW ADD PURCHASE FORM
-// ========================================
-
+// Display add purchase form
 router.get(
     "/purchases/add",
     protect,
@@ -50,188 +41,200 @@ router.get(
             const suppliers = await Supplier.find().sort({ name: 1 });
             const products = await Product.find().sort({ name: 1 });
 
-            res.render("add-purchase", {
+            return res.render("add-purchase", {
                 suppliers,
                 products,
                 user: req.user
             });
-
         } catch (error) {
-            console.error("Add purchase page error:", error);
-            res.status(500).send("Failed to load add purchase page");
+            console.error("Add purchase page error:", error.message);
+            return res.status(500).send("Failed to load add purchase page");
         }
     }
 );
 
-
-// ========================================
-// SAVE PURCHASE AND UPDATE STOCK
-// ========================================
-
+// Save purchase and update stock in one transaction
 router.post(
     "/purchases/add",
     protect,
     allowedRoles("Admin", "Manager"),
     async (req, res) => {
-        const updatedProducts = [];
-        const createdMovements = [];
-        let savedPurchase = null;
+        const { supplier } = req.body;
 
-        try {
-            const { supplier } = req.body;
+        const toArray = (value) =>
+            Array.isArray(value) ? value : [value];
 
-            // Form fields must use product, quantity and purchasePrice.
-            // Each field can contain one value or multiple values.
-            const toArray = value =>
-                Array.isArray(value) ? value : [value];
+        const productIds = toArray(req.body.product);
+        const quantities = toArray(req.body.quantity);
+        const prices = toArray(req.body.purchasePrice);
 
-            const productIds = toArray(req.body.product);
-            const quantities = toArray(req.body.quantity);
-            const prices = toArray(req.body.purchasePrice);
+        if (
+            typeof supplier !== "string" ||
+            !mongoose.isValidObjectId(supplier) ||
+            productIds.length === 0 ||
+            productIds.length > 100 ||
+            productIds.some(id => typeof id !== "string" ||
+                !mongoose.isValidObjectId(id)) ||
+            productIds.length !== quantities.length ||
+            productIds.length !== prices.length
+        ) {
+            return res.status(400).send("Invalid purchase details");
+        }
+
+        const items = [];
+        let totalAmount = 0;
+
+        // Validate quantities and prices before starting transaction
+        for (let i = 0; i < productIds.length; i++) {
+            const quantityText = quantities[i];
+            const priceText = prices[i];
 
             if (
-                !supplier ||
-                !mongoose.isValidObjectId(supplier) ||
-                productIds.length === 0 ||
-                productIds.some(id => !id) ||
-                productIds.length !== quantities.length ||
-                productIds.length !== prices.length
+                typeof quantityText !== "string" ||
+                !/^\d+$/.test(quantityText.trim()) ||
+                typeof priceText !== "string" ||
+                !/^\d+(\.\d{1,2})?$/.test(priceText.trim())
             ) {
+                return res.status(400).send(
+                    "Enter valid whole quantities and prices with up to two decimal places"
+                );
+            }
+
+            const quantity = Number(quantityText);
+            const purchasePrice = Number(priceText);
+
+            if (
+                !Number.isSafeInteger(quantity) ||
+                quantity < 1 ||
+                !Number.isFinite(purchasePrice) ||
+                purchasePrice < 0
+            ) {
+                return res.status(400).send(
+                    "Quantity must be positive and price cannot be negative"
+                );
+            }
+
+            const lineTotal = Math.round(
+                quantity * purchasePrice * 100
+            ) / 100;
+
+            if (!Number.isSafeInteger(Math.round(lineTotal * 100))) {
+                return res.status(400).send("Purchase amount is too large");
+            }
+
+            totalAmount += lineTotal;
+
+            if (!Number.isSafeInteger(Math.round(totalAmount * 100))) {
+                return res.status(400).send("Purchase total is too large");
+            }
+
+            items.push({
+                product: productIds[i],
+                quantity,
+                purchasePrice
+            });
+        }
+
+        const session = await mongoose.startSession();
+
+        try {
+            await session.withTransaction(async () => {
+                const existingSupplier = await Supplier.findById(supplier)
+                    .session(session);
+
+                if (!existingSupplier) {
+                    const error = new Error("Supplier not found");
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                // Confirm all products exist
+                const uniqueProductIds = [...new Set(productIds)];
+
+                const existingProducts = await Product.find({
+                    _id: { $in: uniqueProductIds }
+                }).session(session);
+
+                if (existingProducts.length !== uniqueProductIds.length) {
+                    const error = new Error("One or more products were not found");
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                const [purchase] = await Purchase.create(
+                    [{
+                        supplier,
+                        items,
+                        totalAmount: Math.round(totalAmount * 100) / 100,
+                        purchasedBy: req.user._id
+                    }],
+                    { session }
+                );
+
+                // Increase stock and record every movement
+                for (const item of items) {
+                    const updatedProduct = await Product.findOneAndUpdate(
+                        {
+                            _id: item.product,
+                            quantity: {
+                                $lte: Number.MAX_SAFE_INTEGER - item.quantity
+                            }
+                        },
+                        {
+                            $inc: { quantity: item.quantity }
+                        },
+                        {
+                            new: true,
+                            runValidators: true,
+                            session
+                        }
+                    );
+
+                    if (!updatedProduct) {
+                        const error = new Error(
+                            "Stock quantity would exceed the allowed limit"
+                        );
+                        error.statusCode = 400;
+                        throw error;
+                    }
+
+                    const previousQuantity =
+                        updatedProduct.quantity - item.quantity;
+
+                    await StockMovement.create(
+                        [{
+                            product: updatedProduct._id,
+                            type: "Stock In",
+                            quantity: item.quantity,
+                            previousQuantity,
+                            newQuantity: updatedProduct.quantity,
+                            reason: `Purchase ${purchase._id}`,
+                            performedBy: req.user._id
+                        }],
+                        { session }
+                    );
+                }
+            });
+
+            return res.redirect("/purchases");
+        } catch (error) {
+            console.error("Save purchase error:", error.message);
+
+            if (error.statusCode) {
+                return res.status(error.statusCode).send(error.message);
+            }
+
+            if (error.name === "ValidationError") {
                 return res.status(400).send("Invalid purchase details");
             }
 
-            // Validate supplier
-            const existingSupplier = await Supplier.findById(supplier);
-
-            if (!existingSupplier) {
-                return res.status(400).send("Supplier not found");
-            }
-
-            const items = [];
-            let totalAmount = 0;
-
-            // Validate every item before changing stock
-            for (let i = 0; i < productIds.length; i++) {
-                const productId = productIds[i];
-                const quantity = Number(quantities[i]);
-                const purchasePrice = Number(prices[i]);
-
-                if (
-                    !mongoose.isValidObjectId(productId) ||
-                    !Number.isSafeInteger(quantity) ||
-                    quantity < 1 ||
-                    !Number.isFinite(purchasePrice) ||
-                    purchasePrice < 0
-                ) {
-                    return res.status(400).send(
-                        "Invalid product, quantity or purchase price"
-                    );
-                }
-
-                const existingProduct = await Product.findById(productId);
-
-                if (!existingProduct) {
-                    return res.status(400).send("Product not found");
-                }
-
-                items.push({
-                    product: existingProduct._id,
-                    quantity,
-                    purchasePrice
-                });
-
-                const lineTotal = quantity * purchasePrice;
-
-                if (
-                    !Number.isFinite(lineTotal) ||
-                    !Number.isFinite(totalAmount + lineTotal) ||
-                    !Number.isSafeInteger(quantity)
-                ) {
-                    return res.status(400).send("Purchase amount is too large");
-                }
-
-                totalAmount += lineTotal;
-            }
-
-            if (!Number.isFinite(totalAmount)) {
-                return res.status(400).send("Invalid purchase total");
-            }
-
-            // Create purchase record
-            savedPurchase = await Purchase.create({
-                supplier,
-                items,
-                totalAmount,
-                purchasedBy: req.user._id
-            });
-
-            // Increase stock and record each Stock In movement
-            for (const item of items) {
-                const updatedProduct = await Product.findOneAndUpdate(
-                    { _id: item.product },
-                    { $inc: { quantity: item.quantity } },
-                    { new: true, runValidators: true }
-                );
-
-                if (!updatedProduct) {
-                    throw new Error("Product not found during stock update");
-                }
-
-                updatedProducts.push({
-                    productId: updatedProduct._id,
-                    quantity: item.quantity
-                });
-
-                const previousQuantity =
-                    updatedProduct.quantity - item.quantity;
-
-                const movement = await StockMovement.create({
-                    product: updatedProduct._id,
-                    type: "Stock In",
-                    quantity: item.quantity,
-                    previousQuantity,
-                    newQuantity: updatedProduct.quantity,
-                    reason: `Purchase ${savedPurchase._id}`,
-                    performedBy: req.user._id
-                });
-
-                createdMovements.push(movement._id);
-            }
-
-            return res.redirect("/purchases");
-
-        } catch (error) {
-            console.error("Save purchase error:", error);
-
-            // Attempt to undo changes if processing fails
-            try {
-                if (createdMovements.length > 0) {
-                    await StockMovement.deleteMany({
-                        _id: { $in: createdMovements }
-                    });
-                }
-
-                for (const update of updatedProducts.reverse()) {
-                    await Product.updateOne(
-                        { _id: update.productId },
-                        { $inc: { quantity: -update.quantity } }
-                    );
-                }
-
-                if (savedPurchase) {
-                    await Purchase.findByIdAndDelete(savedPurchase._id);
-                }
-            } catch (rollbackError) {
-                console.error("Purchase rollback error:", rollbackError);
-                return res.status(500).send(
-                    "Purchase failed and rollback needs checking. Check stock and purchase history."
-                );
-            }
-
-            return res.status(500).send("Failed to save purchase");
+            return res.status(500).send(
+                "Failed to save purchase. Please try again."
+            );
+        } finally {
+            await session.endSession();
         }
     }
 );
-
 
 module.exports = router;

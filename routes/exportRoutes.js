@@ -13,213 +13,332 @@ const router = express.Router();
 
 // Protect all export routes
 router.use(protect);
+router.use(allowedRoles("Admin", "Manager"));
 
-
-// Convert values safely for CSV
+// Escape CSV values and prevent formula injection
 function escapeCSV(value) {
-  let text = String(value ?? "");
+    let text = String(value ?? "");
 
-  // Prevent spreadsheet formula injection
-  if (/^[=+\-@\t\r]/.test(text)) {
-    text = "'" + text;
-  }
+    if (/^[=+\-@\t\r]/.test(text)) {
+        text = "'" + text;
+    }
 
-  return `"${text.replace(/"/g, '""')}"`;
+    return `"${text.replace(/"/g, '""')}"`;
 }
 
-// Download CSV or Excel file
+// Protect Excel cells against formula injection
+function safeExcelValue(value) {
+    if (typeof value !== "string") {
+        return value;
+    }
+
+    return /^[=+\-@\t\r]/.test(value) ? "'" + value : value;
+}
+
+// Validate YYYY-MM-DD date input
+function parseDate(value) {
+    if (
+        typeof value !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+        return null;
+    }
+
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return date;
+}
+
+// Get and validate date range
+function getDateRange(req) {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate && !endDate) {
+        return null;
+    }
+
+    const start = startDate ? parseDate(startDate) : null;
+    const end = endDate ? parseDate(endDate) : null;
+
+    if ((startDate && !start) || (endDate && !end)) {
+        const error = new Error("Invalid date. Use YYYY-MM-DD.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (start) {
+        start.setHours(0, 0, 0, 0);
+    }
+
+    if (end) {
+        end.setHours(23, 59, 59, 999);
+    }
+
+    if (start && end && start > end) {
+        const error = new Error("Start date cannot be after end date.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (start && end) {
+        const days = (end - start) / (24 * 60 * 60 * 1000);
+
+        if (days > 366) {
+            const error = new Error(
+                "Please select a date range of one year or less."
+            );
+            error.statusCode = 400;
+            throw error;
+        }
+    }
+
+    const range = {};
+
+    if (start) range.$gte = start;
+    if (end) range.$lte = end;
+
+    return range;
+}
+
+// Download CSV or Excel report
 async function downloadReport(req, res, headers, rows, filename) {
-  const format = req.query.format || "csv";
+    const format = req.query.format || "csv";
 
-  if (!["csv", "xlsx"].includes(format)) {
-    return res.status(400).send("Invalid format. Use csv or xlsx.");
-  }
+    if (!["csv", "xlsx"].includes(format)) {
+        return res.status(400).send("Invalid format. Use csv or xlsx.");
+    }
 
-  if (format === "csv") {
-    const csv = [
-      headers.map(escapeCSV).join(","),
-      ...rows.map(row => row.map(escapeCSV).join(","))
-    ].join("\r\n");
+    if (format === "csv") {
+        const csv = [
+            headers.map(escapeCSV).join(","),
+            ...rows.map(row => row.map(escapeCSV).join(","))
+        ].join("\r\n");
 
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${filename}.csv"`
+        );
+
+        return res.send("\uFEFF" + csv);
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Report");
+
+    worksheet.addRow(headers.map(safeExcelValue));
+
+    rows.forEach(row => {
+        worksheet.addRow(row.map(safeExcelValue));
+    });
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    worksheet.columns.forEach(column => {
+        column.width = 20;
+    });
+
     res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${filename}.csv"`
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
 
-    return res.send("\uFEFF" + csv);
-  }
+    res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}.xlsx"`
+    );
 
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Report");
-
-  worksheet.addRow(headers);
-  rows.forEach(row => worksheet.addRow(row));
-
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.views = [{ state: "frozen", ySplit: 1 }];
-  worksheet.columns.forEach(column => {
-    column.width = 20;
-  });
-
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  );
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${filename}.xlsx"`
-  );
-
-  await workbook.xlsx.write(res);
-  res.end();
-}
-
-// Optional date filtering
-function getDateRange(req) {
-  const { startDate, endDate } = req.query;
-
-  if (!startDate && !endDate) return {};
-
-  const filter = {};
-
-  if (startDate) {
-    const start = new Date(startDate);
-    if (Number.isNaN(start.getTime())) {
-      throw new Error("Invalid start date.");
-    }
-    start.setHours(0, 0, 0, 0);
-    filter.$gte = start;
-  }
-
-  if (endDate) {
-    const end = new Date(endDate);
-    if (Number.isNaN(end.getTime())) {
-      throw new Error("Invalid end date.");
-    }
-    end.setHours(23, 59, 59, 999);
-    filter.$lte = end;
-  }
-
-  return filter;
+    await workbook.xlsx.write(res);
+    res.end();
 }
 
 // Export sales
 router.get("/sales", async (req, res) => {
-  try {
-    const dateRange = getDateRange(req);
-    const filter = Object.keys(dateRange).length
-      ? { saleDate: dateRange }
-      : {};
+    try {
+        const dateRange = getDateRange(req);
 
-    const sales = await Sale.find(filter)
-      .populate("soldBy", "name")
-      .populate("items.product", "name sku")
-      .sort({ saleDate: -1 });
+        // Assumes Sale uses saleDate; see note below.
+        const filter = dateRange ? { saleDate: dateRange } : {};
 
-    const rows = [];
+        const sales = await Sale.find(filter)
+            .populate("soldBy", "name")
+            .populate("items.product", "name sku")
+            .sort({ saleDate: -1 });
 
-    sales.forEach(sale => {
-      sale.items.forEach(item => {
-        rows.push([
-          sale.saleDate?.toISOString().slice(0, 10) || "",
-          sale.soldBy?.name || "",
-          item.product?.name || "Deleted product",
-          item.product?.sku || "",
-          item.quantity,
-          item.sellingPrice,
-          item.quantity * item.sellingPrice,
-          sale.totalAmount
-        ]);
-      });
-    });
+        const rows = [];
 
-    await downloadReport(
-      req, res,
-      ["Date", "Sold By", "Product", "SKU", "Quantity",
-       "Selling Price", "Item Total", "Sale Total"],
-      rows,
-      "sales-report"
-    );
-  } catch (error) {
-    res.status(400).send(error.message);
-  }
+        sales.forEach(sale => {
+            sale.items.forEach(item => {
+                rows.push([
+                    sale.saleDate
+                        ? sale.saleDate.toISOString().slice(0, 10)
+                        : "",
+                    sale.soldBy?.name || "",
+                    item.product?.name || "Deleted product",
+                    item.product?.sku || "",
+                    item.quantity,
+                    item.sellingPrice,
+                    Number(
+                        (item.quantity * item.sellingPrice).toFixed(2)
+                    ),
+                    sale.totalAmount
+                ]);
+            });
+        });
+
+        return await downloadReport(
+            req,
+            res,
+            [
+                "Date",
+                "Sold By",
+                "Product",
+                "SKU",
+                "Quantity",
+                "Selling Price",
+                "Item Total",
+                "Sale Total"
+            ],
+            rows,
+            "sales-report"
+        );
+    } catch (error) {
+        console.error("Sales export error:", error.message);
+
+        if (!res.headersSent) {
+            return res.status(error.statusCode || 500).send(
+                error.statusCode
+                    ? error.message
+                    : "Could not export sales report."
+            );
+        }
+    }
 });
 
 // Export purchases
 router.get("/purchases", async (req, res) => {
-  try {
-    const dateRange = getDateRange(req);
-    const filter = Object.keys(dateRange).length
-      ? { createdAt: dateRange }
-      : {};
+    try {
+        const dateRange = getDateRange(req);
+        const filter = dateRange ? { createdAt: dateRange } : {};
 
-    const purchases = await Purchase.find(filter)
-      .populate("supplier", "name")
-      .populate("purchasedBy", "name")
-      .populate("items.product", "name sku")
-      .sort({ createdAt: -1 });
+        const purchases = await Purchase.find(filter)
+            .populate("supplier", "name")
+            .populate("purchasedBy", "name")
+            .populate("items.product", "name sku")
+            .sort({ createdAt: -1 });
 
-    const rows = [];
+        const rows = [];
 
-    purchases.forEach(purchase => {
-      purchase.items.forEach(item => {
-        rows.push([
-          purchase.createdAt?.toISOString().slice(0, 10) || "",
-          purchase.supplier?.name || "",
-          purchase.purchasedBy?.name || "",
-          item.product?.name || "Deleted product",
-          item.product?.sku || "",
-          item.quantity,
-          item.purchasePrice,
-          item.quantity * item.purchasePrice
-        ]);
-      });
-    });
+        purchases.forEach(purchase => {
+            purchase.items.forEach(item => {
+                rows.push([
+                    purchase.createdAt
+                        ? purchase.createdAt.toISOString().slice(0, 10)
+                        : "",
+                    purchase.supplier?.name || "",
+                    purchase.purchasedBy?.name || "",
+                    item.product?.name || "Deleted product",
+                    item.product?.sku || "",
+                    item.quantity,
+                    item.purchasePrice,
+                    Number(
+                        (item.quantity * item.purchasePrice).toFixed(2)
+                    )
+                ]);
+            });
+        });
 
-    await downloadReport(
-      req, res,
-      ["Date", "Supplier", "Purchased By", "Product", "SKU",
-       "Quantity", "Purchase Price", "Item Total"],
-      rows,
-      "purchases-report"
-    );
-  } catch (error) {
-    res.status(400).send(error.message);
-  }
+        return await downloadReport(
+            req,
+            res,
+            [
+                "Date",
+                "Supplier",
+                "Purchased By",
+                "Product",
+                "SKU",
+                "Quantity",
+                "Purchase Price",
+                "Item Total"
+            ],
+            rows,
+            "purchases-report"
+        );
+    } catch (error) {
+        console.error("Purchases export error:", error.message);
+
+        if (!res.headersSent) {
+            return res.status(error.statusCode || 500).send(
+                error.statusCode
+                    ? error.message
+                    : "Could not export purchases report."
+            );
+        }
+    }
 });
 
 // Export current inventory
 router.get("/inventory", async (req, res) => {
-  try {
-    const products = await Product.find()
-      .populate("category", "name")
-      .sort({ name: 1 });
+    try {
+        const products = await Product.find()
+            .populate("category", "name")
+            .sort({ name: 1 });
 
-    const rows = products.map(product => [
-      product.name,
-      product.sku,
-      product.category?.name || "",
-      product.price,
-      product.quantity,
-      product.lowStockThreshold ?? 5,
-      product.quantity === 0
-        ? "Out of Stock"
-        : product.quantity <= (product.lowStockThreshold ?? 5)
-          ? "Low Stock"
-          : "In Stock"
-    ]);
+        const rows = products.map(product => {
+            const quantity = Number(product.quantity || 0);
+            const threshold = Number(product.lowStockThreshold ?? 5);
 
-    await downloadReport(
-      req, res,
-      ["Product", "SKU", "Category", "Price", "Quantity",
-       "Low Stock Threshold", "Stock Status"],
-      rows,
-      "inventory-report"
-    );
-  } catch (error) {
-    res.status(500).send("Could not export inventory report.");
-  }
+            const status = quantity === 0
+                ? "Out of Stock"
+                : quantity <= threshold
+                    ? "Low Stock"
+                    : "In Stock";
+
+            return [
+                product.name,
+                product.sku,
+                product.category?.name || "",
+                product.price,
+                quantity,
+                threshold,
+                status
+            ];
+        });
+
+        return await downloadReport(
+            req,
+            res,
+            [
+                "Product",
+                "SKU",
+                "Category",
+                "Price",
+                "Quantity",
+                "Low Stock Threshold",
+                "Stock Status"
+            ],
+            rows,
+            "inventory-report"
+        );
+    } catch (error) {
+        console.error("Inventory export error:", error.message);
+
+        if (!res.headersSent) {
+            return res.status(500).send(
+                "Could not export inventory report."
+            );
+        }
+    }
 });
 
 module.exports = router;

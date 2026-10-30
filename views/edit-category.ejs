@@ -39,6 +39,7 @@
                 action="/categories/edit/<%= category._id %>"
                 method="POST"
                 class="auth-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 
 
 
